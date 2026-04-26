@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - Tech App Computer House</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
+                <a href="products.html" class="nav-item"><span>📦</span> Products</a>
+                <a href="inventory.html" class="nav-item active"><span>📋</span> Inventory</a>
+                <a href="categories.html" class="nav-item"><span>🏷️</span> Categories</a>
+                <a href="sales.html" class="nav-item"><span>💰</span> Sales</a>
+                <a href="suppliers.html" class="nav-item"><span>🚚</span> Suppliers</a>
+                <a href="purchase-orders.html" class="nav-item"><span>📄</span> Purchase Orders</a>
+                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
+                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
+            </nav>
+            <div class="sidebar-footer"><a href="login.html" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Inventory Control</h1>
+                <div class="topbar-actions">
+                    <button class="btn btn-secondary" onclick="generatePDFReceipt()">📥 Export Report</button>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stats-grid mb-6">
+                    <div class="stat-card">
+                        <div class="stat-title">In Stock</div>
+                        <div class="stat-value" id="inStockCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title" style="color: var(--warning);">Low Stock</div>
+                        <div class="stat-value" id="lowStockCount">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-title" style="color: var(--danger);">Out of Stock</div>
+                        <div class="stat-value" id="outStockCount">0</div>
+                    </div>
+                </div>
+
+                <div class="card mb-6">
+                    <div class="flex gap-4 items-center">
+                        <input type="text" id="invSearchInput" class="form-control" placeholder="Search product or SKU..." style="max-width: 400px;">
+                        <select id="invStatusFilter" class="form-control" style="max-width: 200px;">
+                            <option value="">All Status</option>
+                            <option value="in_stock">In Stock</option>
+                            <option value="low_stock">Low Stock</option>
+                            <option value="out_of_stock">Out of Stock</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product Info</th><th>SKU</th><th>On Hand</th><th>Available</th><th>Reserved</th><th>Status</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryBody">
+                                <tr><td colspan="7" class="empty-state">Loading inventory...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Inventory Modal -->
+    <div class="modal-wrapper" id="inventoryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Update Inventory</h3>
+                <button class="modal-close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h4 id="inventoryProductName" style="color: var(--primary); margin: 0;"></h4>
+                        <div id="inventoryProductSKU" class="text-sm text-muted"></div>
+                    </div>
+                </div>
+                <form id="inventoryForm">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Total On Hand (Current) *</label>
+                            <input type="number" class="form-control" name="quantity_on_hand" required min="0" placeholder="Set total new quantity">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reserved (e.g. for orders)</label>
+                            <input type="number" class="form-control" name="quantity_reserved" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warehouse Location</label>
+                        <input type="text" class="form-control" name="warehouse_location" placeholder="e.g. Main Store, Shelf B4">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status Override</label>
+                        <select class="form-control form-select" name="status">
+                            <option value="">Auto-calculate</option>
+                            <option value="in_stock">Force In Stock</option>
+                            <option value="low_stock">Force Low Stock</option>
+                            <option value="out_of_stock">Force Out of Stock</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveInventoryBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script src="js/services/apiClient.js"></script>
+    <script>
+        let inventory = [];
+        let filteredInventory = [];
+        let editingItemId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = Utils.storage.get('user');
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            loadInventory();
+            
+            document.getElementById('invSearchInput').addEventListener('input', applyFilters);
+            document.getElementById('invStatusFilter').addEventListener('change', applyFilters);
+            document.getElementById('saveInventoryBtn').addEventListener('click', saveInventory);
+            
+            document.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('inventoryModal').classList.remove('show');
+                    editingItemId = null;
+                });
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', e => { 
+                e.preventDefault(); 
+                new AuthService().logout().then(() => window.location.href = 'login.html'); 
+            });
+        });
+
+        async function loadInventory() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/inventory.php';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                
+                if (result.success) {
+                    inventory = result.data || [];
+                    filteredInventory = [...inventory];
+                    renderInventory();
+                    updateStats(result.stats);
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('inventoryBody').innerHTML = '<tr><td colspan="7" class="empty-state">Error loading inventory</td></tr>';
+            }
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('invSearchInput').value.toLowerCase();
+            const status = document.getElementById('invStatusFilter').value;
+
+            filteredInventory = inventory.filter(item => {
+                const matchesQuery = (item.product_name || '').toLowerCase().includes(query) || (item.sku || '').toLowerCase().includes(query);
+                const matchesStatus = !status || item.status === status;
+                return matchesQuery && matchesStatus;
+            });
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryBody');
+            if (!filteredInventory.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No matching items found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredInventory.map(item => `
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">${item.product_name}</div>
+                        <div class="text-xs text-muted">${item.category || 'General'}</div>
+                    </td>
+                    <td><code>${item.sku || 'N/A'}</code></td>
+                    <td><strong class="text-lg">${item.quantity_on_hand}</strong></td>
+                    <td>${item.quantity_available}</td>
+                    <td>${item.quantity_reserved}</td>
+                    <td><span class="badge badge-${item.status === 'in_stock' ? 'success' : (item.status === 'low_stock' ? 'warning' : 'danger')}">${item.status.replace('_', ' ').toUpperCase()}</span></td>
+                    <td><button class="btn btn-sm btn-primary" onclick="openInventoryModal(${item.product_id})">Update</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function openInventoryModal(productId) {
+            const item = inventory.find(i => parseInt(i.product_id) === parseInt(productId));
+            if (!item) return;
+            
+            editingItemId = productId;
+            const form = document.getElementById('inventoryForm');
+            document.getElementById('inventoryProductName').textContent = item.product_name;
+            document.getElementById('inventoryProductSKU').textContent = 'Stock Number: ' + (item.sku || 'N/A');
+            form.quantity_on_hand.value = item.quantity_on_hand;
+            form.quantity_reserved.value = item.quantity_reserved || 0;
+            form.warehouse_location.value = item.warehouse_location || '';
+            form.status.value = item.status || '';
+            
+            document.getElementById('inventoryModal').classList.add('show');
+        }
+
+        async function saveInventory() {
+            if (!editingItemId) return;
+            const form = document.getElementById('inventoryForm');
+            const data = {
+                quantity_on_hand: parseInt(form.quantity_on_hand.value) || 0,
+                quantity_reserved: parseInt(form.quantity_reserved.value) || 0,
+                warehouse_location: form.warehouse_location.value,
+                status: form.status.value
+            };
+            
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/inventory.php';
+                
+                const response = await fetch(basePath + '?id=' + editingItemId, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Inventory updated successfully');
+                    document.getElementById('inventoryModal').classList.remove('show');
+                    editingItemId = null;
+                    await loadInventory();
+                } else {
+                    alert(result.message || 'Error updating inventory');
+                }
+            } catch (error) {
+                alert('Connection error: ' + error.message);
+            }
+        }
+
+        function updateStats(stats) {
+            if (!stats) return;
+            document.getElementById('inStockCount').textContent = stats.in_stock || 0;
+            document.getElementById('lowStockCount').textContent = stats.low_stock || 0;
+            document.getElementById('outStockCount').textContent = stats.out_of_stock || 0;
+        }
+
+        function generatePDFReceipt() {
+            const date = new Date().toLocaleDateString();
+            let receipt = '<html><head><title>Inventory Report</title><style>body{font-family:sans-serif;padding:20px;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:8px;text-align:left;} th{background:#f4f4f4;}</style></head><body>';
+            receipt += '<h1>Inventory Status Report</h1><p>Date: ' + date + '</p><table><thead><tr><th>SKU</th><th>Product</th><th>On Hand</th><th>Status</th></tr></thead><tbody>';
+            inventory.forEach(item => {
+                receipt += `<tr><td>${item.sku || '-'}</td><td>${item.product_name}</td><td>${item.quantity_on_hand}</td><td>${item.status}</td></tr>`;
+            });
+            receipt += '</tbody></table></body></html>';
+            const win = window.open('', '_blank');
+            win.document.write(receipt);
+            win.document.close();
+            win.print();
+        }
+    </script>
+</body>
+</html>

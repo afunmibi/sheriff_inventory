@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales - Tech App Computer House</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
+                <a href="products.html" class="nav-item"><span>📦</span> Products</a>
+                <a href="inventory.html" class="nav-item"><span>📋</span> Inventory</a>
+                <a href="categories.html" class="nav-item"><span>🏷️</span> Categories</a>
+                <a href="suppliers.html" class="nav-item"><span>🚚</span> Suppliers</a>
+                <a href="purchase-orders.html" class="nav-item"><span>📄</span> Purchase Orders</a>
+                <a href="sales.html" class="nav-item active"><span>💰</span> Sales</a>
+                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
+                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
+            </nav>
+            <div class="sidebar-footer"><a href="login.html" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Sales History</h1>
+                <button class="btn btn-primary" id="addSaleBtn">+ Record New Sale</button>
+            </header>
+
+            <div class="content">
+                <div class="card mb-6">
+                    <div class="flex gap-4 items-center">
+                        <input type="text" id="salesSearchInput" class="form-control" placeholder="Search Invoice, Product, SN or VIN..." style="max-width: 400px;">
+                        <input type="date" id="dateFilter" class="form-control" style="max-width: 200px;">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice#</th><th>Date/Time</th><th>Product</th><th>Qty</th><th>Total</th><th>Payment</th><th>Customer/Identity</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesBody">
+                                <tr><td colspan="8" class="empty-state">Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Sale Modal -->
+    <div class="modal-wrapper" id="saleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Transaction</h3>
+                <button class="modal-close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="saleForm">
+                    <div class="form-group">
+                        <label class="form-label">Product *</label>
+                        <select class="form-control form-select" name="product_id" id="productSelect" required></select>
+                    </div>
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Quantity *</label>
+                            <input type="number" class="form-control" name="quantity_sold" min="1" value="1" required id="qtyInput">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Price per Unit (₦)</label>
+                            <input type="number" class="form-control" name="unit_price" step="0.01" readOnly id="priceInput">
+                        </div>
+                    </div>
+                    
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: var(--radius); margin-bottom: 20px;">
+                        <legend style="padding: 0 10px; font-weight: 600; color: var(--primary);">Tracking Info</legend>
+                        <div class="grid grid-2">
+                            <div class="form-group"><label class="form-label">Serial Number</label><input type="text" class="form-control" name="serial_number" placeholder="Enter S/N"></div>
+                            <div class="form-group"><label class="form-label">VIN</label><input type="text" class="form-control" name="vin" placeholder="Enter VIN"></div>
+                        </div>
+                    </fieldset>
+
+                    <div class="grid grid-2">
+                        <div class="form-group"><label class="form-label">Customer Name</label><input type="text" class="form-control" name="customer_name" placeholder="Walk-in"></div>
+                        <div class="form-group"><label class="form-label">Customer Phone</label><input type="tel" class="form-control" name="customer_phone" placeholder="WhatsApp Number"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-control form-select" name="payment_method">
+                            <option value="cash">Cash</option>
+                            <option value="transfer">Bank Transfer</option>
+                            <option value="pos">POS / Card</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="flex-wrap: wrap;">
+                <div style="width: 100%; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-muted">Grand Total: </span>
+                    <strong id="modalTotal" class="text-xl" style="color: var(--primary);">₦0.00</strong>
+                </div>
+                <div class="flex gap-2" style="width: 100%; justify-content: flex-end;">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button class="btn btn-success" id="saveAndShareBtn">Complete & WhatsApp</button>
+                    <button class="btn btn-primary" id="saveSaleBtn">Complete & Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script src="js/services/apiClient.js"></script>
+    <script>
+        let sales = [];
+        let products = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = Utils.storage.get('user');
+            if (!user) { window.location.href = 'login.html'; return; }
+
+            loadSales();
+            loadProducts();
+
+            document.getElementById('addSaleBtn').addEventListener('click', () => {
+                document.getElementById('saleForm').reset();
+                document.getElementById('modalTotal').textContent = '₦0.00';
+                document.getElementById('saleModal').classList.add('show');
+            });
+
+            document.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+                btn.addEventListener('click', () => document.getElementById('saleModal').classList.remove('show'));
+            });
+
+            document.getElementById('productSelect').addEventListener('change', updateModalTotal);
+            document.getElementById('qtyInput').addEventListener('input', updateModalTotal);
+            
+            document.getElementById('saveSaleBtn').addEventListener('click', () => saveSale(false));
+            document.getElementById('saveAndShareBtn').addEventListener('click', () => saveSale(true));
+            
+            document.getElementById('logoutBtn').addEventListener('click', e => {
+                e.preventDefault();
+                new AuthService().logout().then(() => window.location.href = 'login.html');
+            });
+
+            document.getElementById('salesSearchInput').addEventListener('input', applyFilters);
+            document.getElementById('dateFilter').addEventListener('change', applyFilters);
+        });
+
+        function applyFilters() {
+            const query = document.getElementById('salesSearchInput').value.toLowerCase();
+            const date = document.getElementById('dateFilter').value;
+            const filtered = sales.filter(s => {
+                const matchesQuery = 
+                    s.invoice_number.toLowerCase().includes(query) || 
+                    s.product_name.toLowerCase().includes(query) ||
+                    (s.serial_number && s.serial_number.toLowerCase().includes(query)) ||
+                    (s.vin && s.vin.toLowerCase().includes(query));
+                const matchesDate = !date || s.sale_date === date;
+                return matchesQuery && matchesDate;
+            });
+            renderSales(filtered);
+        }
+
+        async function loadSales() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    sales = result.data.data || [];
+                    renderSales(sales);
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function loadProducts() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/products.php?limit=500';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    products = result.data.data || [];
+                    const select = document.getElementById('productSelect');
+                    select.innerHTML = '<option value="">-- Select Product --</option>' + 
+                        products.map(p => `<option value="${p.product_id}" data-price="${p.selling_price}">${p.product_name} (₦${Utils.formatCurrency(p.selling_price).replace('₦', '')})</option>`).join('');
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        function updateModalTotal() {
+            const select = document.getElementById('productSelect');
+            const qty = parseInt(document.getElementById('qtyInput').value) || 0;
+            const option = select.options[select.selectedIndex];
+            const price = option ? parseFloat(option.dataset.price) || 0 : 0;
+            document.getElementById('priceInput').value = price;
+            document.getElementById('modalTotal').textContent = Utils.formatCurrency(qty * price);
+        }
+
+        function renderSales(data) {
+            const tbody = document.getElementById('salesBody');
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No transactions found</td></tr>'; return; }
+            tbody.innerHTML = data.map(s => `
+                <tr>
+                    <td><code>${s.invoice_number}</code></td>
+                    <td>${new Date(s.sale_date).toLocaleDateString()}<br><small class="text-muted">${s.sale_time || ''}</small></td>
+                    <td>${s.product_name}</td>
+                    <td>${s.quantity_sold}</td>
+                    <td>${Utils.formatCurrency(s.quantity_sold * s.unit_price)}</td>
+                    <td><span class="badge badge-info">${s.payment_method.toUpperCase()}</span></td>
+                    <td>
+                        <strong>${s.customer_name || 'Walk-in'}</strong>
+                        ${s.serial_number ? '<br><span class="text-sm">SN: '+s.serial_number+'</span>' : ''}
+                        ${s.vin ? '<br><span class="text-sm">VIN: '+s.vin+'</span>' : ''}
+                    </td>
+                    <td><button class="btn btn-sm btn-secondary" onclick="printReceipt('${s.invoice_number}')">📄 Receipt</button></td>
+                </tr>
+            `).join('');
+        }
+
+        async function saveSale(autoShare = false) {
+            const form = document.getElementById('saleForm');
+            const data = {
+                product_id: form.product_id.value,
+                quantity_sold: form.quantity_sold.value,
+                unit_price: form.unit_price.value,
+                payment_method: form.payment_method.value,
+                customer_name: form.customer_name.value,
+                customer_phone: form.customer_phone.value,
+                serial_number: form.serial_number.value,
+                vin: form.vin.value
+            };
+            if (!data.product_id || !data.quantity_sold) { alert('Please fill required fields'); return; }
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php';
+                const response = await fetch(basePath, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('Raw response:', text);
+                    throw new Error('Server returned an invalid response. Please check if the database is properly configured.');
+                }
+
+                if (result.success) {
+                    document.getElementById('saleModal').classList.remove('show');
+                    await loadSales();
+                    printReceipt(result.data.invoice_number, autoShare);
+                } else { alert(result.message || 'Error recording sale'); }
+            } catch (error) { alert('Error: ' + error.message); }
+        }
+
+        function printReceipt(invoiceNumber, autoShare = false) {
+            const sale = sales.find(s => s.invoice_number === invoiceNumber);
+            if (!sale) return;
+
+            const totalAmount = Utils.formatCurrency(sale.quantity_sold * sale.unit_price);
+            const saleDate = new Date(sale.sale_date).toLocaleDateString();
+            let shareText = `RECEIPT: ${sale.invoice_number}\nItem: ${sale.product_name}\nQty: ${sale.quantity_sold}\nTotal: ${totalAmount}\nDate: ${saleDate}`;
+            if (sale.serial_number) shareText += `\nS/N: ${sale.serial_number}`;
+            if (sale.vin) shareText += `\nVIN: ${sale.vin}`;
+            shareText += `\nThank you!`;
+            
+            const phone = sale.customer_phone ? sale.customer_phone.replace(/\D/g, '') : '';
+
+            if (autoShare && phone) {
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(shareText)}`, '_blank');
+            } else if (autoShare) {
+                if (navigator.share) {
+                    navigator.share({ title: 'Receipt', text: shareText }).catch(console.error);
+                } else {
+                    window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+                }
+            }
+
+            const receiptHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Receipt - ${sale.invoice_number}</title>
+                    <style>
+                        body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0 auto; padding: 10px; font-size: 12px; }
+                        .text-center { text-align: center; }
+                        .header { margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                        .logo { font-size: 18px; font-weight: bold; }
+                        .item-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                        .total-row { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; }
+                        .footer { margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; font-size: 10px; }
+                        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+                        .btn { padding: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none; display: block; font-size: 14px; }
+                        .btn-print { background: #1e40af; }
+                        .btn-whatsapp { background: #16a34a; }
+                        .id-section { margin: 10px 0; font-size: 11px; font-style: italic; }
+                        @media print { .no-print { display: none; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header text-center">
+                        <div class="logo">TECH APPLICATION</div>
+                        <div>Phone: +2348032488020</div>
+                        <br>
+                        <div><strong>SALES RECEIPT</strong></div>
+                        <div>#${sale.invoice_number}</div>
+                        <div>Date: ${saleDate} ${sale.sale_time || ''}</div>
+                    </div>
+                    <div class="details">
+                        <div class="item-row"><span><strong>Item:</strong> ${sale.product_name}</span></div>
+                        <div class="item-row"><span>Qty: ${sale.quantity_sold} x ${Utils.formatCurrency(sale.unit_price)}</span><span>${totalAmount}</span></div>
+                    </div>
+                    
+                    ${(sale.serial_number || sale.vin) ? `
+                    <div class="id-section">
+                        ${sale.serial_number ? '<div>S/N: ' + sale.serial_number + '</div>' : ''}
+                        ${sale.vin ? '<div>VIN: ' + sale.vin + '</div>' : ''}
+                    </div>
+                    ` : ''}
+
+                    <div class="total-row"><span>TOTAL AMOUNT</span><span>${totalAmount}</span></div>
+                    <div style="margin-top: 10px;">
+                        <div>Payment: ${sale.payment_method.toUpperCase()}</div>
+                        <div>Customer: ${sale.customer_name || 'Walk-in'}</div>
+                        ${sale.customer_phone ? '<div>Phone: ' + sale.customer_phone + '</div>' : ''}
+                    </div>
+                    <div class="footer text-center">
+                        <div>Thank you for your patronage!</div>
+                        <div class="btn-group no-print">
+                            <button onclick="window.print()" class="btn btn-print">🖨️ Print Receipt</button>
+                            ${phone ? `<a href="https://wa.me/${phone}?text=${encodeURIComponent(shareText)}" class="btn btn-whatsapp" target="_blank">📱 Send to WhatsApp</a>` : `<button onclick="shareLink()" class="btn btn-whatsapp">📱 Share via WhatsApp</button>`}
+                        </div>
+                        <br>
+                        <div><em>Powered by Tech Application</em></div>
+                    </div>
+                    <script>
+                        function shareLink() {
+                            const text = ${JSON.stringify(shareText)};
+                            if (navigator.share) {
+                                navigator.share({ title: 'Receipt', text: text }).catch(console.error);
+                            } else {
+                                window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+                            }
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `;
+            const printWin = window.open('', '_blank', 'width=400,height=600');
+            if (printWin) {
+                printWin.document.write(receiptHtml);
+                printWin.document.close();
+            } else {
+                alert('Receipt window was blocked by your browser. Please allow popups for this site.');
+            }
+        }
+    </script>
+</body>
+</html>
