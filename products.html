@@ -3,30 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products - Tech App Computer House</title>
+    <title>Products - SHERIFF SHEVVY ENTERPRISES</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
-                <a href="products.html" class="nav-item active"><span>📦</span> Products</a>
-                <a href="inventory.html" class="nav-item"><span>📋</span> Inventory</a>
-                <a href="categories.html" class="nav-item"><span>🏷️</span> Categories</a>
-                <a href="sales.html" class="nav-item"><span>💰</span> Sales</a>
-                <a href="suppliers.html" class="nav-item"><span>🚚</span> Suppliers</a>
-                <a href="purchase-orders.html" class="nav-item"><span>📄</span> Purchase Orders</a>
-                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
-                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
-            </nav>
-            <div class="sidebar-footer"><a href="login.html" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
         </aside>
 
         <main class="main-content">
             <header class="topbar">
-                <h1 class="page-title">Products</h1>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <h1 class="page-title" style="margin:0;">Products</h1>
+                    <a id="storefrontLink" href="#" target="_blank" style="display:none;font-size:0.75rem;color:#fbbf24;background:#1e1b4b;padding:5px 12px;border-radius:8px;text-decoration:none;font-weight:700;white-space:nowrap;">🌐 View Storefront →</a>
+                </div>
                 <button class="btn btn-primary" id="addProductBtn">+ Add Product</button>
             </header>
 
@@ -105,20 +98,25 @@
                             <input type="text" class="form-control" name="subcategory">
                         </div>
                     </div>
-                    <div class="grid grid-2">
+                    <div class="grid grid-3">
                         <div class="form-group">
                             <label class="form-label">Cost Price (₦) *</label>
                             <input type="number" class="form-control" name="cost_price" step="0.01" min="0" value="0">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Selling Price (₦) *</label>
+                            <label class="form-label">Min: Selling Price (₦)</label>
+                            <input type="number" class="form-control" name="min_price" step="0.01" min="0" placeholder="Leave empty for fixed price">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max: Selling Price (₦) *</label>
                             <input type="number" class="form-control" name="selling_price" step="0.01" min="0" required>
                         </div>
                     </div>
                     <div class="grid grid-3">
                         <div class="form-group">
-                            <label class="form-label">Stock Quantity</label>
+                            <label class="form-label" id="stockLabel">Stock Quantity</label>
                             <input type="number" class="form-control" name="quantity_on_hand" min="0" value="0">
+                            <small class="text-muted" id="currentStockHint" style="display:none;"></small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Reorder Level</label>
@@ -137,9 +135,35 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Product Description</label>
-                        <textarea class="form-control" name="description" rows="3"></textarea>
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Product description for storefront"></textarea>
                     </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" name="is_featured" id="isFeatured" checked style="width: 20px; height: 20px;">
+                        <label for="isFeatured" style="font-weight: 700; color: white; cursor: pointer;">Show on Storefront</label>
+                    </div>
+
+                    <!-- Image Gallery Manager -->
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label class="form-label">Product Images</label>
+                        <div class="gallery-grid" id="galleryGrid"></div>
+                        <div class="gallery-upload-row">
+                            <input type="file" id="galleryFileInput" accept="image/*" style="display:none;">
+                            <select id="galleryLabelSelect" class="form-control form-select" style="max-width:160px;">
+                                <option value="">No label</option>
+                                <option value="Front View">Front View</option>
+                                <option value="Side View">Side View</option>
+                                <option value="Top View">Top View</option>
+                                <option value="Back View">Back View</option>
+                                <option value="Angle View">Angle View</option>
+                                <option value="Display">Display</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('galleryFileInput').click()">+ Add Image</button>
+                            <span class="text-muted" style="font-size:0.75rem;">Upload product photos with labels</span>
+                        </div>
+                    </div>
+                    <!-- Hidden field for backward compat (stores first image URL) -->
+                    <input type="hidden" name="image_url" id="imageUrl" value="">
                 </form>
             </div>
             <div class="modal-footer">
@@ -158,7 +182,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const user = Utils.storage.get('user');
-            if (!user) { window.location.href = 'login.html'; return; }
+            if (!user) { window.location.href = 'login.php'; return; }
+
+            
 
             loadProducts();
             loadCategories();
@@ -166,6 +192,11 @@
             document.getElementById('searchInput').addEventListener('input', Utils.debounce(applyFilters, 200));
             document.getElementById('categoryFilter').addEventListener('change', applyFilters);
             document.getElementById('stockFilter').addEventListener('change', applyFilters);
+            // Handle Quick Add Action from Dashboard
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('action') === 'new') {
+                setTimeout(() => openModal(), 500); 
+            }
             document.getElementById('addProductBtn').addEventListener('click', () => { openModal(); });
             document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
             
@@ -174,10 +205,21 @@
                 btn.addEventListener('click', closeModal);
             });
 
+            // Gallery image upload
+            document.getElementById('galleryFileInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const productId = editingId;
+                if (!productId) { Utils.showWarning('Save the product first before adding images'); return; }
+                const label = document.getElementById('galleryLabelSelect').value;
+                uploadGalleryImage(productId, file, label);
+                this.value = '';
+            });
+
             document.getElementById('logoutBtn').addEventListener('click', e => {
                 e.preventDefault();
                 Utils.storage.remove('user');
-                window.location.href = 'login.html';
+                window.location.href = 'login.php';
             });
         });
 
@@ -221,6 +263,31 @@
         }
 
         async function loadProducts() {
+            const hub = Utils.getHubContext();
+            
+            // Adapt UI based on Hub
+            if (hub === 'store') {
+                document.querySelector('.page-title').textContent = 'Web Product Visibility';
+                const base = window.location.pathname.replace(/\/[^/]+$/, '/');
+                const link = document.getElementById('storefrontLink');
+                link.style.display = 'inline-flex';
+                link.href = base;
+                const addBtn = document.getElementById('addProductBtn');
+                addBtn.style.display = 'block';
+                addBtn.textContent = '+ New Store Item';
+                addBtn.style.background = '#fbbf24';
+                addBtn.style.color = '#1e1b4b';
+                
+                // Change Table Headers
+                const headers = document.querySelectorAll('.data-table th');
+                headers[3].textContent = 'Description';
+                headers[5].textContent = 'Availability'; // Focus on front-end "In Stock" vs "Out of Stock"
+                headers[6].style.display = 'none';
+            } else {
+                document.querySelector('.page-title').textContent = 'Inventory Management';
+                document.getElementById('addProductBtn').textContent = '+ Add Product';
+            }
+
             try {
                 const url = getApiUrl('products.php?page=1&limit=1000');
                 const response = await fetch(url);
@@ -237,11 +304,15 @@
             const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
             const category = document.getElementById('categoryFilter').value;
             const stockStatus = document.getElementById('stockFilter').value;
+            const hub = Utils.getHubContext();
 
             visibleProducts = allProducts.filter(product => {
                 const matchesQuery = !query || [product.product_name, product.sku].some(v => String(v || '').toLowerCase().includes(query));
-                const matchesCategory = !category || product.category === category;
+                const matchesCategory = !category || (product.category && product.category.toLowerCase() === category.toLowerCase());
                 const matchesStock = !stockStatus || (product.status || 'out_of_stock') === stockStatus;
+                
+                // If in Store Hub, maybe show only items that COULD be featured? 
+                // For now show all so they can toggle visibility
                 return matchesQuery && matchesCategory && matchesStock;
             });
             renderProducts();
@@ -249,25 +320,55 @@
 
         function renderProducts() {
             const tbody = document.getElementById('productsBody');
+            const hub = Utils.getHubContext();
+
             if (!visibleProducts.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No products found</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${hub === 'store' ? '8' : '8'}" class="empty-state">No products found</td></tr>`;
                 return;
             }
-            tbody.innerHTML = visibleProducts.map(product => `
-                <tr>
-                    <td><code>${product.sku || '-'}</code></td>
-                    <td>${product.product_name || '-'}</td>
-                    <td>${product.category || '-'}</td>
-                    <td>${Utils.formatCurrency(product.cost_price || 0)}</td>
-                    <td>${Utils.formatCurrency(product.selling_price || 0)}</td>
-                    <td>${product.quantity_on_hand || 0}</td>
-                    <td><span class="badge badge-${getStockBadge(product)}">${(product.status || 'out_of_stock').replace('_',' ').toUpperCase()}</span></td>
-                    <td>
-                        <button class="btn btn-sm" onclick="editProduct(${product.product_id})">Edit</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.product_id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
+
+            tbody.innerHTML = visibleProducts.map(product => {
+                if (hub === 'store') {
+                   // Storefront Hub View
+                   return `
+                    <tr>
+                        <td><code>${product.sku || '-'}</code></td>
+                        <td>${product.product_name || '-'}</td>
+                        <td>${product.category || '-'}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${product.description || '<span class="text-muted">No description</span>'}</td>
+                        <td>${Utils.formatCurrency(product.selling_price || 0)}</td>
+                        <td>
+                            <span class="badge badge-${getStockBadge(product)}">${(product.status || 'out_of_stock').replace('_',' ').toUpperCase()}</span>
+                            <span style="display:block;font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${product.quantity_on_hand || 0} available</span>
+                        </td>
+                        <td>
+                            <span class="badge ${product.is_featured == 1 ? 'badge-success' : 'badge-warning'}">
+                                ${product.is_featured == 1 ? 'LIVE ON STORE' : 'HIDDEN'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editProduct(${product.product_id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.product_id})">Delete</button>
+                        </td>
+                    </tr>`;
+                } else {
+                   // Operations Hub View
+                   return `
+                    <tr>
+                        <td><code>${product.sku || '-'}</code></td>
+                        <td>${product.product_name || '-'}</td>
+                        <td>${product.category || '<span class="text-muted">No Category</span>'}</td>
+                        <td>${Utils.formatCurrency(product.cost_price || 0)}</td>
+                        <td>${Utils.formatCurrency(product.selling_price || 0)}</td>
+                        <td>${product.quantity_on_hand || 0}</td>
+                        <td><span class="badge badge-${getStockBadge(product)}">${(product.status || 'out_of_stock').replace('_',' ').toUpperCase()}</span></td>
+                        <td>
+                            <button class="btn btn-sm" onclick="editProduct(${product.product_id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.product_id})">Delete</button>
+                        </td>
+                    </tr>`;
+                }
+            }).join('');
         }
 
         function getStockBadge(product) {
@@ -280,24 +381,107 @@
         function openModal(product = null) {
             const form = document.getElementById('productForm');
             const modal = document.getElementById('productModal');
+            const hub = Utils.getHubContext();
             form.reset();
+
+            // Hub-Sensitive Modal Handling
+            if (hub === 'store') {
+                document.getElementById('productModal').classList.add('store-mode-product');
+                document.getElementById('modalTitle').textContent = product ? 'Manage Web Visibility' : 'Feature Product';
+                document.getElementById('modalTitle').classList.toggle('feature-product', !product && Utils.getHubContext() === 'store');
+                if (!product && Utils.getHubContext() === 'store') {
+                    document.getElementById('modalTitle').style.color = '#fbbf24';
+                    document.getElementById('modalTitle').style.fontSize = '20px';
+                    document.getElementById('modalTitle').style.fontWeight = '800';
+                    document.getElementById('modalTitle').style.textTransform = 'uppercase';
+                    document.getElementById('modalTitle').style.letterSpacing = '-0.5px';
+                } else {
+                    document.getElementById('modalTitle').style.color = '';
+                    document.getElementById('modalTitle').style.fontSize = '';
+                    document.getElementById('modalTitle').style.fontWeight = '';
+                    document.getElementById('modalTitle').style.textTransform = '';
+                    document.getElementById('modalTitle').style.letterSpacing = '';
+                }
+                // Hide purely operational logistics fields
+                const logisticsFields = form.querySelectorAll('input[name="cost_price"], input[name="sku"], select[name="unit_of_measurement"]');
+                logisticsFields.forEach(field => {
+                    const group = field.closest('.form-group');
+                    if (group) group.style.display = 'none';
+                });
+                
+                // Ensure front-end fields are visible
+                form.product_name.closest('.form-group').style.display = 'block';
+                form.selling_price.closest('.form-group').style.display = 'block';
+                form.quantity_on_hand.closest('.form-group').style.display = 'block';
+                form.quantity_on_hand.placeholder = "Add more stock";
+                form.reorder_level.closest('.form-group').style.display = 'block';
+                document.getElementById('currentStockHint').style.display = 'block';
+            } else {
+                // Restore all for Ops Hub
+                document.getElementById('productModal').classList.remove('store-mode-product');
+                const allFields = form.querySelectorAll('.form-group');
+                allFields.forEach(group => group.style.display = 'block');
+                form.quantity_on_hand.placeholder = "";
+            }
 
             if (product) {
                 editingId = product.product_id;
-                document.getElementById('modalTitle').textContent = 'Edit Product';
+                document.getElementById('modalTitle').textContent = hub === 'store' ? 'Manage Web Visibility' : 'Edit Product';
                 form.product_name.value = product.product_name || '';
                 form.sku.value = product.sku || '';
-                form.category.value = product.category || '';
+                // Find category option regardless of case
+                if (product.category) {
+                    const options = Array.from(form.category.options);
+                    const matchingOption = options.find(opt => opt.value.toLowerCase() === product.category.toLowerCase());
+                    if (matchingOption) form.category.value = matchingOption.value;
+                }
+                
                 form.cost_price.value = product.cost_price || 0;
                 form.selling_price.value = product.selling_price || 0;
-                form.quantity_on_hand.value = product.quantity_on_hand || 0;
+                if (form.min_price) form.min_price.value = product.min_price || '';
+
+                const currentQty = Number(product.quantity_on_hand || 0);
+                if (hub === 'store') {
+                    // Add-stock mode — show current, field is "how many to add"
+                    document.getElementById('stockLabel').textContent = 'Add More Stock';
+                    form.quantity_on_hand.value = 0;
+                    form.quantity_on_hand.dataset.currentStock = currentQty;
+                    document.getElementById('currentStockHint').textContent = 'Currently ' + currentQty + ' in stock';
+                } else {
+                    document.getElementById('stockLabel').textContent = 'Stock Quantity';
+                    form.quantity_on_hand.value = currentQty;
+                    document.getElementById('currentStockHint').textContent = '';
+                }
+
                 form.reorder_level.value = product.reorder_level || 10;
                 form.unit_of_measurement.value = product.unit_of_measurement || 'pieces';
                 form.description.value = product.description || '';
+                form.image_url.value = product.image_url || '';
+                form.is_featured.checked = Number(product.is_featured) === 1;
+                loadGalleryImages(product.product_id);
             } else {
                 editingId = null;
-                document.getElementById('modalTitle').textContent = 'Add Product';
+                document.getElementById('modalTitle').textContent = hub === 'store' ? 'Feature Product' : 'Add Product';
+                document.getElementById('modalTitle').classList.toggle('feature-product', Utils.getHubContext() === 'store');
+                if (hub === 'store') {
+                    document.getElementById('modalTitle').style.color = '#fbbf24';
+                    document.getElementById('modalTitle').style.fontSize = '20px';
+                    document.getElementById('modalTitle').style.fontWeight = '800';
+                    document.getElementById('modalTitle').style.textTransform = 'uppercase';
+                    document.getElementById('modalTitle').style.letterSpacing = '-0.5px';
+                } else {
+                    document.getElementById('modalTitle').style.color = '';
+                    document.getElementById('modalTitle').style.fontSize = '';
+                    document.getElementById('modalTitle').style.fontWeight = '';
+                    document.getElementById('modalTitle').style.textTransform = '';
+                    document.getElementById('modalTitle').style.letterSpacing = '';
+                }
+                document.getElementById('stockLabel').textContent = 'Stock Quantity';
+                form.quantity_on_hand.dataset.currentStock = 0;
+                document.getElementById('currentStockHint').textContent = '';
+                document.getElementById('galleryGrid').innerHTML = '<span class="text-muted" style="grid-column:1/-1;">Save the product first, then add images</span>';
             }
+            
             modal.classList.add('show');
         }
 
@@ -313,18 +497,31 @@
 
         async function saveProduct() {
             const form = document.getElementById('productForm');
+            if (!form.product_name) {
+                console.error("Form elements not found");
+                return;
+            }
+
             const payload = {
                 product_name: form.product_name.value.trim(),
-                sku: form.sku.value.trim(),
+                sku: form.sku ? form.sku.value.trim() : '',
                 category: form.category.value,
-                subcategory: form.subcategory.value.trim(),
+                subcategory: '',
                 cost_price: Number(form.cost_price.value || 0),
                 selling_price: Number(form.selling_price.value || 0),
+                min_price: form.min_price ? Number(form.min_price.value) || null : null,
+                max_price: Number(form.selling_price.value || 0) || null,
                 quantity_on_hand: Number(form.quantity_on_hand.value || 0),
-                reorder_level: Number(form.reorder_level.value || 10),
-                unit_of_measurement: form.unit_of_measurement.value,
-                description: form.description.value.trim()
+                reorder_level: Number(form.reorder_level.value || 0),
+                unit_of_measurement: form.unit_of_measurement ? form.unit_of_measurement.value : 'pieces',
+                description: form.description.value.trim(),
+                image_url: form.image_url.value.trim(),
+                is_featured: form.is_featured.checked ? 1 : 0
             };
+
+            if (editingId && Utils.getHubContext() === 'store') {
+                payload.add_stock = true;
+            }
 
             if (!payload.product_name || !payload.category) {
                 Utils.showError('Name and Category are required');
@@ -341,10 +538,73 @@
                 const result = await response.json();
                 if (result.success) {
                     Utils.showSuccess(editingId ? 'Product updated' : 'Product created');
-                    closeModal();
                     await loadProducts();
+                    if (!editingId && result.data) {
+                        // New product — find full data from freshly loaded products
+                        const newId = Number(result.data.product_id);
+                        const fullProduct = allProducts.find(p => Number(p.product_id) === newId) || result.data;
+                        openModal(fullProduct);
+                        setTimeout(() => {
+                            document.querySelector('.gallery-upload-row')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 300);
+                    } else {
+                        closeModal();
+                    }
                 } else { throw new Error(result.message); }
             } catch (error) { Utils.showError(error.message || 'Failed to save'); }
+        }
+
+        // ─── Gallery Functions ────────────────────────────────────
+        async function loadGalleryImages(productId) {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '<span class="text-muted" style="grid-column:1/-1;">Loading...</span>';
+            try {
+                const res = await fetch(getApiUrl('product_images.php?product_id=' + productId));
+                const result = await res.json();
+                if (result.success && result.data.length) {
+                    renderGalleryGrid(result.data);
+                } else {
+                    grid.innerHTML = '<span class="text-muted" style="grid-column:1/-1;">No images yet</span>';
+                }
+            } catch { grid.innerHTML = '<span class="text-muted" style="grid-column:1/-1;">Error loading images</span>'; }
+        }
+
+        function renderGalleryGrid(images) {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = images.map(img => `
+                <div class="gallery-item">
+                    <img src="${img.image_url}" alt="${img.label || ''}">
+                    ${img.label ? `<div class="gallery-label">${img.label}</div>` : ''}
+                    <button class="gallery-delete" onclick="deleteGalleryImage(${img.image_id})" title="Delete">✕</button>
+                </div>
+            `).join('');
+        }
+
+        async function uploadGalleryImage(productId, file, label) {
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('product_id', productId);
+            formData.append('label', label);
+            try {
+                const res = await fetch(getApiUrl('product_images.php'), { method: 'POST', body: formData });
+                const result = await res.json();
+                if (result.success) {
+                    Utils.showSuccess('Image uploaded');
+                    loadGalleryImages(productId);
+                } else { throw new Error(result.message); }
+            } catch (e) { Utils.showError(e.message || 'Upload failed'); }
+        }
+
+        async function deleteGalleryImage(imageId) {
+            if (!confirm('Delete this image?')) return;
+            try {
+                const res = await fetch(getApiUrl('product_images.php?id=' + imageId), { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) {
+                    Utils.showSuccess('Image deleted');
+                    if (editingId) loadGalleryImages(editingId);
+                } else { throw new Error(result.message); }
+            } catch (e) { Utils.showError(e.message || 'Delete failed'); }
         }
     </script>
 </body>

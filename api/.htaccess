@@ -1,16 +1,2 @@
-# API Routes
+# API directory - no special rewrites needed, handled by root .htaccess
 Options +Indexes
-
-# Route /api/products to products.php
-RewriteEngine On
-RewriteBase /opencode_projects/sheriff_inventory/api/
-
-RewriteRule ^products$ products.php [L]
-RewriteRule ^inventory$ inventory.php [L]
-RewriteRule ^sales$ sales.php [L]
-RewriteRule ^suppliers$ suppliers.php [L]
-RewriteRule ^dashboard$ dashboard.php [L]
-
-# Pass through other requests
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^(.*)$ $1.php [L]

@@ -28,7 +28,7 @@ class DatabaseSetup {
                 getenv('DB_HOST') ?: 'localhost',
                 getenv('DB_USERNAME') ?: 'root',
                 getenv('DB_PASSWORD') ?: '',
-                getenv('DB_DATABASE') ?: 'sheriff_inventory',
+                getenv('DB_DATABASE') ?: 'shevvy_sheriff_inventory',
                 (int)(getenv('DB_PORT') ?: 3306)
             );
             
@@ -58,7 +58,7 @@ class DatabaseSetup {
     }
     
     private function createDatabase(): void {
-        $dbName = getenv('DB_DATABASE') ?: 'sheriff_inventory';
+        $dbName = getenv('DB_DATABASE') ?: 'shevvy_sheriff_inventory';
         
         $sql = "CREATE DATABASE IF NOT EXISTS `$dbName` 
                 CHARACTER SET utf8mb4 

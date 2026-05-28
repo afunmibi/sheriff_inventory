@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli('localhost', 'root', '', 'sheriff_inventory');
+$conn = new mysqli('localhost', 'root', '', 'shevvy_sheriff_inventory');
 if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
 
 $sql1 = "CREATE TABLE IF NOT EXISTS categories (

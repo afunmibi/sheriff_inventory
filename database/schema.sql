@@ -3,11 +3,11 @@
 -- MySQL 5.7+
 
 -- Create database
-CREATE DATABASE IF NOT EXISTS sheriff_inventory
+CREATE DATABASE IF NOT EXISTS shevvy_sheriff_inventory
 CHARACTER SET utf8mb4
 COLLATE utf8mb4_unicode_ci;
 
-USE sheriff_inventory;
+USE shevvy_sheriff_inventory;
 
 -- =============================================================================
 -- USERS TABLE
@@ -18,7 +18,7 @@ CREATE TABLE users (
     email VARCHAR(150) NOT NULL UNIQUE,
     phone VARCHAR(20),
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'manager', 'cashier', 'warehouse_staff') NOT NULL DEFAULT 'cashier',
+    role VARCHAR(50) NOT NULL DEFAULT 'cashier',
     permissions JSON,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     last_login DATETIME,
@@ -37,7 +37,7 @@ CREATE TABLE settings (
     setting_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     setting_key VARCHAR(100) NOT NULL UNIQUE,
     setting_value TEXT,
-    category VARCHAR(50) NOT NULL,
+    category VARCHAR(50) NOT NULL DEFAULT 'general',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_category (category),
@@ -88,6 +88,16 @@ CREATE TABLE suppliers (
 ) ENGINE=InnoDB;
 
 -- =============================================================================
+-- CATEGORIES TABLE
+-- =============================================================================
+CREATE TABLE categories (
+    category_id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================================================
 -- PRODUCTS TABLE
 -- =============================================================================
 CREATE TABLE products (
@@ -95,7 +105,7 @@ CREATE TABLE products (
     uuid VARCHAR(36) NOT NULL UNIQUE,
     sku VARCHAR(50) NOT NULL UNIQUE,
     product_name VARCHAR(200) NOT NULL,
-    category ENUM('chargers', 'cables', 'adapters', 'power_supplies', 'hubs', 'other') NOT NULL,
+    category VARCHAR(100) NOT NULL,
     subcategory VARCHAR(100),
     description TEXT,
     specifications JSON,
@@ -108,7 +118,7 @@ CREATE TABLE products (
         END
     ) STORED,
     reorder_level INT NOT NULL DEFAULT 10,
-    unit_of_measurement ENUM('pieces', 'sets', 'packs') DEFAULT 'pieces',
+    unit_of_measurement VARCHAR(50) DEFAULT 'pieces',
     image_url VARCHAR(500),
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -178,7 +188,7 @@ CREATE TABLE purchase_orders (
     po_date DATE NOT NULL,
     expected_delivery_date DATE,
     actual_delivery_date DATE,
-    status ENUM('draft', 'submitted', 'approved', 'received', 'partially_received', 'cancelled') DEFAULT 'draft',
+    status VARCHAR(50) DEFAULT 'pending',
     total_amount DECIMAL(12, 2) DEFAULT 0.00,
     payment_status ENUM('pending', 'partial', 'paid') DEFAULT 'pending',
     notes TEXT,

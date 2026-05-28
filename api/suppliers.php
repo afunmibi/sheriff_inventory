@@ -15,10 +15,19 @@ require_once __DIR__ . '/../app/config/Config.php';
 require_once __DIR__ . '/../app/config/DatabaseConnection.php';
 
 Config::load();
+session_start();
+$role = strtolower($_SESSION['user']['role'] ?? '');
 
 try {
     $conn = DatabaseConnection::getConnection();
     $method = $_SERVER['REQUEST_METHOD'];
+
+    // RESTRICTION: Only Admins can manage suppliers
+    $isAdmin = (in_array($role, ['admin', 'administrator']));
+    if (in_array($method, ['POST', 'PUT', 'DELETE'], true) && !$isAdmin) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Admins can manage suppliers']);
+        exit;
+    }
     
     // GET suppliers
     if ($method === 'GET') {

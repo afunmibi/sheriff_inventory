@@ -3,25 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory - Tech App Computer House</title>
+    <title>Inventory - SHERIFF SHEVVY ENTERPRISES</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
-                <a href="products.html" class="nav-item"><span>📦</span> Products</a>
-                <a href="inventory.html" class="nav-item active"><span>📋</span> Inventory</a>
-                <a href="categories.html" class="nav-item"><span>🏷️</span> Categories</a>
-                <a href="sales.html" class="nav-item"><span>💰</span> Sales</a>
-                <a href="suppliers.html" class="nav-item"><span>🚚</span> Suppliers</a>
-                <a href="purchase-orders.html" class="nav-item"><span>📄</span> Purchase Orders</a>
-                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
-                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
-            </nav>
-            <div class="sidebar-footer"><a href="login.html" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
         </aside>
 
         <main class="main-content">
@@ -34,17 +24,17 @@
 
             <div class="content">
                 <div class="stats-grid mb-6">
-                    <div class="stat-card">
-                        <div class="stat-title">In Stock</div>
-                        <div class="stat-value" id="inStockCount">0</div>
+                    <div class="stats-card">
+                        <div class="stats-label">In Stock</div>
+                        <div class="stats-value" id="inStockCount">0</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-title" style="color: var(--warning);">Low Stock</div>
-                        <div class="stat-value" id="lowStockCount">0</div>
+                    <div class="stats-card">
+                        <div class="stats-label" style="color: var(--warning);">Low Stock</div>
+                        <div class="stats-value" id="lowStockCount">0</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-title" style="color: var(--danger);">Out of Stock</div>
-                        <div class="stat-value" id="outStockCount">0</div>
+                    <div class="stats-card">
+                        <div class="stats-label" style="color: var(--danger);">Out of Stock</div>
+                        <div class="stats-value" id="outStockCount">0</div>
                     </div>
                 </div>
 
@@ -95,13 +85,19 @@
                 <form id="inventoryForm">
                     <div class="grid grid-2">
                         <div class="form-group">
-                            <label class="form-label">Total On Hand (Current) *</label>
-                            <input type="number" class="form-control" name="quantity_on_hand" required min="0" placeholder="Set total new quantity">
+                            <label class="form-label" style="color: var(--primary); font-weight: 700;">Add to Stock (Incremental)</label>
+                            <input type="number" class="form-control" name="add_to_stock" placeholder="e.g. 30" min="0">
+                            <small class="text-muted">Enter amount to ADD to current stock</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Reserved (e.g. for orders)</label>
-                            <input type="number" class="form-control" name="quantity_reserved" min="0" value="0">
+                            <label class="form-label">Total On Hand (Override)</label>
+                            <input type="number" class="form-control" name="quantity_on_hand" min="0" placeholder="Set absolute total">
+                            <small class="text-muted">Current: <span id="currentOnHandDisplay">0</span></small>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reserved (e.g. for orders)</label>
+                        <input type="number" class="form-control" name="quantity_reserved" min="0" value="0">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Warehouse Location</label>
@@ -134,7 +130,11 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const user = Utils.storage.get('user');
-            if (!user) { window.location.href = 'login.html'; return; }
+            if (!user) { window.location.href = 'login.php'; return; }
+            
+
+            // Define isStaff globally for the scope of this page
+            window.isStaff = (user.role || 'Staff').toLowerCase() === 'staff';
 
             loadInventory();
             
@@ -151,7 +151,7 @@
 
             document.getElementById('logoutBtn').addEventListener('click', e => { 
                 e.preventDefault(); 
-                new AuthService().logout().then(() => window.location.href = 'login.html'); 
+                new AuthService().logout().then(() => window.location.href = 'login.php'); 
             });
         });
 
@@ -197,14 +197,14 @@
                 <tr>
                     <td>
                         <div style="font-weight: 600;">${item.product_name}</div>
-                        <div class="text-xs text-muted">${item.category || 'General'}</div>
+                        <div class="text-xs text-muted">${item.category || '<span class="text-muted">No Category</span>'}</div>
                     </td>
                     <td><code>${item.sku || 'N/A'}</code></td>
                     <td><strong class="text-lg">${item.quantity_on_hand}</strong></td>
                     <td>${item.quantity_available}</td>
                     <td>${item.quantity_reserved}</td>
                     <td><span class="badge badge-${item.status === 'in_stock' ? 'success' : (item.status === 'low_stock' ? 'warning' : 'danger')}">${item.status.replace('_', ' ').toUpperCase()}</span></td>
-                    <td><button class="btn btn-sm btn-primary" onclick="openInventoryModal(${item.product_id})">Update</button></td>
+                    <td>${isStaff ? '<span class="text-muted text-sm">View Only</span>' : `<button class="btn btn-sm btn-primary" onclick="openInventoryModal(${item.product_id})">Update</button>`}</td>
                 </tr>
             `).join('');
         }
@@ -217,7 +217,11 @@
             const form = document.getElementById('inventoryForm');
             document.getElementById('inventoryProductName').textContent = item.product_name;
             document.getElementById('inventoryProductSKU').textContent = 'Stock Number: ' + (item.sku || 'N/A');
-            form.quantity_on_hand.value = item.quantity_on_hand;
+            
+            form.add_to_stock.value = '';
+            form.quantity_on_hand.value = ''; // empty by default to prevent accidental overwrite
+            document.getElementById('currentOnHandDisplay').textContent = item.quantity_on_hand;
+            
             form.quantity_reserved.value = item.quantity_reserved || 0;
             form.warehouse_location.value = item.warehouse_location || '';
             form.status.value = item.status || '';
@@ -228,12 +232,21 @@
         async function saveInventory() {
             if (!editingItemId) return;
             const form = document.getElementById('inventoryForm');
+            
             const data = {
-                quantity_on_hand: parseInt(form.quantity_on_hand.value) || 0,
                 quantity_reserved: parseInt(form.quantity_reserved.value) || 0,
                 warehouse_location: form.warehouse_location.value,
                 status: form.status.value
             };
+
+            const addToStock = parseInt(form.add_to_stock.value);
+            const absoluteQty = parseInt(form.quantity_on_hand.value);
+
+            if (!isNaN(addToStock) && addToStock > 0) {
+                data.add_to_stock = addToStock;
+            } else if (!isNaN(absoluteQty)) {
+                data.quantity_on_hand = absoluteQty;
+            }
             
             try {
                 const pathname = window.location.pathname;

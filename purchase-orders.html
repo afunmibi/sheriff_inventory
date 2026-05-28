@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Orders - Tech App Computer House</title>
+    <title>Purchase Orders - SHERIFF SHEVVY ENTERPRISES</title>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="css/style.css">
     <style>
@@ -46,7 +46,7 @@
             #poModal { padding-left: 0; }
         }
         .items-header {
-            background: var(--gray-50);
+            background: var(--border, var(--gray-50));
             padding: 12px;
             border-radius: var(--radius) var(--radius) 0 0;
             border: 1px solid var(--border);
@@ -60,14 +60,14 @@
             overflow-y: auto;
             border: 1px solid var(--border);
             border-radius: 0 0 var(--radius) var(--radius);
-            background: #fff;
+            background: var(--bg-card, #fff);
         }
         .items-table-wrapper .data-table {
             margin: 0;
             border: none;
         }
         .items-table-wrapper .data-table thread th {
-            background: var(--gray-50);
+            background: var(--border, var(--gray-50));
             position: sticky;
             top: 0;
             z-index: 10;
@@ -79,24 +79,15 @@
             margin-bottom: 20px;
         }
         .item-row:hover {
-            background: var(--gray-50);
+            background: var(--border, var(--gray-50));
         }
     </style>
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
-                <a href="products.html" class="nav-item"><span>📦</span> Products</a>
-                <a href="inventory.html" class="nav-item"><span>📋</span> Inventory</a>
-                <a href="suppliers.html" class="nav-item"><span>🚚</span> Suppliers</a>
-                <a href="purchase-orders.html" class="nav-item active"><span>📄</span> Purchase Orders</a>
-                <a href="sales.html" class="nav-item"><span>💰</span> Sales</a>
-                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
-                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
-            </nav>
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
             <div class="sidebar-footer"><a href="#" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
         </aside>
 
@@ -241,9 +232,11 @@
         <div style="padding: 40px; font-family: Arial, sans-serif; color: #333;">
             <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
                 <div>
-                    <h1 style="color: #1e40af; margin: 0; font-size: 28px;">TECH APP COMPUTER HOUSE</h1>
+                    <h1 style="color: #1e40af; margin: 0; font-size: 28px;">SHERIFF SHEVVY ENTERPRISES</h1>
                     <p style="margin: 5px 0; color: #666;">Inventory Procurement Department</p>
-                    <p style="margin: 2px 0;">Phone: +2348032488020</p>
+                    <p style="margin: 2px 0;">Phone: +234 803 248 8020</p>
+                    <p style="margin: 2px 0; font-size: 11px;">Email: akintundesheriff09@gmail.com</p>
+                    <p style="margin: 2px 0; font-size: 11px;">Lalubu Street, Oke-Ilewo, Ibara, Abeokuta, Ogun State, Nigeria</p>
                 </div>
                 <div style="text-align: right;">
                     <h2 style="margin: 0; color: #333;">PURCHASE ORDER</h2>
@@ -259,7 +252,7 @@
                 </div>
                 <div style="text-align: right;">
                     <h3 style="border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px; color: #666;">SHIP TO</h3>
-                    <p style="margin: 10px 0; font-weight: bold;">Tech App Computer House</p>
+                    <p style="margin: 10px 0; font-weight: bold;">SHERIFF SHEVVY ENTERPRISES</p>
                     <p style="margin: 2px 0;">Expected Delivery: <span id="pdf-expected-date">-</span></p>
                 </div>
             </div>
@@ -303,7 +296,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const user = Utils.storage.get('user');
-            if (!user) { window.location.href = 'login.html'; return; }
+            if (!user) { window.location.href = 'login.php'; return; }
+            
 
             loadPOs();
             
@@ -315,7 +309,7 @@
             
             document.getElementById('logoutBtn').addEventListener('click', (e) => { 
                 e.preventDefault(); 
-                new AuthService().logout().then(() => window.location.href = 'login.html'); 
+                new AuthService().logout().then(() => window.location.href = 'login.php'); 
             });
         });
 
@@ -346,7 +340,11 @@
                     <td><span class="badge badge-${getStatusBadge(po.status || 'pending')}">${(po.status || 'pending').toUpperCase()}</span></td>
                     <td>${Utils.formatCurrency(po.total_amount)}</td>
                     <td onclick="event.stopPropagation()">
-                        <button class="btn btn-sm btn-info" onclick="downloadPO(${po.po_id})">📥 PDF</button>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-info" onclick="downloadPO(${po.po_id})">📥 PDF</button>
+                            ${(po.status === 'pending' || po.status === 'submitted' || po.status === 'approved') ? 
+                                `<button class="btn btn-sm btn-success" onclick="updatePOStatus(${po.po_id}, 'receive')">📦 Receive</button>` : ''}
+                        </div>
                     </td>
                 </tr>
             `).join('');

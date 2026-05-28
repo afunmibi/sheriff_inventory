@@ -3,24 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suppliers - Tech App Computer House</title>
+    <title>Suppliers - SHERIFF SHEVVY ENTERPRISES</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="app-container">
         <aside class="sidebar">
-            <div class="sidebar-header"><div class="sidebar-logo">Tech App Computer House</div></div>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="nav-item"><span>📊</span> Dashboard</a>
-                <a href="products.html" class="nav-item"><span>📦</span> Products</a>
-                <a href="inventory.html" class="nav-item"><span>📋</span> Inventory</a>
-                <a href="categories.html" class="nav-item"><span>🏷️</span> Categories</a>
-                <a href="sales.html" class="nav-item"><span>💰</span> Sales</a>
-                <a href="suppliers.html" class="nav-item active"><span>🚚</span> Suppliers</a>
-                <a href="purchase-orders.html" class="nav-item"><span>📄</span> Purchase Orders</a>
-                <a href="reports.html" class="nav-item"><span>📈</span> Reports</a>
-                <a href="settings.html" class="nav-item"><span>⚙️</span> Settings</a>
-            </nav>
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
             <div class="sidebar-footer"><a href="#" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
         </aside>
 
@@ -96,7 +86,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const user = Utils.storage.get('user');
-            if (!user) { window.location.href = 'login.html'; return; }
+            if (!user) { window.location.href = 'login.php'; return; }
+            
 
             loadSuppliers();
             document.getElementById('searchInput').addEventListener('input', e => search(e.target.value));
@@ -109,7 +100,7 @@
 
             document.getElementById('logoutBtn').addEventListener('click', e => { 
                 e.preventDefault(); 
-                new AuthService().logout().then(() => window.location.href = 'login.html'); 
+                new AuthService().logout().then(() => window.location.href = 'login.php'); 
             });
         });
 

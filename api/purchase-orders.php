@@ -16,8 +16,16 @@ require_once __DIR__ . '/../app/config/Config.php';
 require_once __DIR__ . '/../app/config/DatabaseConnection.php';
 
 Config::load();
-
+session_start();
+$role = strtolower($_SESSION['user']['role'] ?? '');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// RESTRICTION: Only Managers and Admins can manage POs (POST/PUT/DELETE)
+$isAuthorized = (in_array($role, ['admin', 'administrator', 'manager']));
+if (in_array($method, ['POST', 'PUT', 'DELETE'], true) && !$isAuthorized) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Managers and Admins can manage or receive purchase orders']);
+    exit;
+}
 
 try {
     $conn = DatabaseConnection::getConnection();
@@ -154,12 +162,26 @@ try {
         if ($action === 'receive') {
             $conn->begin_transaction();
             try {
+                // Get PO details for logging
+                $poInfoStmt = $conn->prepare("SELECT po_number FROM purchase_orders WHERE po_id = ?");
+                $poInfoStmt->bind_param('i', $id);
+                $poInfoStmt->execute();
+                $poInfo = $poInfoStmt->get_result()->fetch_assoc();
+                $poInfoStmt->close();
+                $poNumber = $poInfo['po_number'] ?? "PO-$id";
+
                 // Get PO items
                 $itemsResult = $conn->query("SELECT product_id, quantity_ordered FROM purchase_order_items WHERE po_id = $id");
                 
                 while ($item = $itemsResult->fetch_assoc()) {
                     $pid = (int)$item['product_id'];
                     $qty = (int)$item['quantity_ordered'];
+
+                    // Get current stock for logging
+                    $invRes = $conn->query("SELECT quantity_on_hand FROM inventory WHERE product_id = $pid");
+                    $currentInv = $invRes->fetch_assoc();
+                    $qtyBefore = (int)($currentInv['quantity_on_hand'] ?? 0);
+                    $qtyAfter = $qtyBefore + $qty;
 
                     // Update Inventory
                     $conn->query("INSERT INTO inventory (product_id, quantity_on_hand, status, last_restock_date)
@@ -168,6 +190,16 @@ try {
                                   quantity_on_hand = quantity_on_hand + $qty,
                                   status = 'in_stock',
                                   last_restock_date = CURDATE()");
+
+                    // Log adjustment
+                    $logStmt = $conn->prepare("INSERT INTO stock_adjustments (product_id, adjustment_type, quantity_adjusted, quantity_before, quantity_after, reason, adjustment_date, approval_status) VALUES (?, 'restock', ?, ?, ?, ?, CURDATE(), 'approved')");
+                    $reason = "Received items from $poNumber";
+                    $logStmt->bind_param('iiiis', $pid, $qty, $qtyBefore, $qtyAfter, $reason);
+                    $logStmt->execute();
+                    $logStmt->close();
+                    
+                    // Update Item Status
+                    $conn->query("UPDATE purchase_order_items SET status = 'received', quantity_received = quantity_ordered WHERE po_id = $id AND product_id = $pid");
                 }
 
                 // Update PO status

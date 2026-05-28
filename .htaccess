@@ -1,0 +1,27 @@
+RewriteEngine On
+Options -Indexes
+
+# Never expose local configuration, dumps, reports, or server-side source.
+<FilesMatch "^(\.env|\.env\..*|.*\.(sql|sqlite|sqlite3|bak|backup|log|ini|conf|md|pdf))$">
+    Require all denied
+</FilesMatch>
+
+RedirectMatch 404 /\.git
+RedirectMatch 404 /(?:storage|cache|logs|database|src|app|legacy)(?:/|$)
+
+# Map assets to public directory
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+# Map uploads to public directory
+RewriteRule ^uploads/(.*)$ public/uploads/$1 [L]
+
+# Route API requests through the front controller before existing PHP files can run directly.
+RewriteRule ^api/(.*)$ public/index.php [QSA,L]
+
+# Skip rewrite for existing files/directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route everything else through the front controller
+RewriteRule ^(.*)$ public/index.php [QSA,L]

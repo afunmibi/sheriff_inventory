@@ -1,5 +1,5 @@
 <?php
-$conn = new mysqli('localhost', 'root', '', 'sheriff_inventory');
+$conn = new mysqli('localhost', 'root', '', 'shevvy_sheriff_inventory');
 if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
 
 $sql1 = "ALTER TABLE sales_transactions ADD COLUMN IF NOT EXISTS serial_number VARCHAR(100) AFTER customer_phone";

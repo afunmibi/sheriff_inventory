@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .report-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Business Analytics</h1>
+            </header>
+
+            <div class="content">
+                <div class="report-controls">
+                    <div class="flex gap-2 mr-auto">
+                        <button class="btn btn-secondary active" data-period="daily">Today</button>
+                        <button class="btn btn-secondary" data-period="weekly">This Week</button>
+                        <button class="btn btn-secondary" data-period="monthly">This Month</button>
+                        <button class="btn btn-secondary" data-period="last_month">Last Month</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn btn-info" id="btnPdf">📥 Export PDF</button>
+                        <button class="btn btn-success" id="btnExcel">📊 Export Excel</button>
+                    </div>
+                </div>
+
+                <div class="report-grid" id="metricsGrid">
+                    <div class="metric-card" style="border-color: var(--primary);">
+                        <div class="metric-value" id="revenueMetric">₦0.00</div>
+                        <div class="metric-label">Revenue</div>
+                    </div>
+                    <div class="metric-card" style="border-color: var(--success);">
+                        <div class="metric-value" id="transactionsMetric">0</div>
+                        <div class="metric-label">Transactions</div>
+                    </div>
+                    <div class="metric-card" style="border-color: var(--warning);">
+                        <div class="metric-value" id="avgMetric">₦0.00</div>
+                        <div class="metric-label">Avg Transaction</div>
+                    </div>
+                    <div class="metric-card" style="border-color: var(--info);">
+                        <div class="metric-value" id="itemsMetric">0</div>
+                        <div class="metric-label">Items Sold</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Top Selling Products</h3></div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Product</th><th>Qty</th><th>Revenue</th></tr></thead>
+                                <tbody id="topProductsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Payment Methods</h3></div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Method</th><th>Count</th><th>Total Amount</th></tr></thead>
+                                <tbody id="paymentsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../assets/js/core/utils.js"></script>
+    <script src="../assets/js/services/apiClient.js"></script>
+    <script>
+        let reportData = null;
+        let currentPeriod = 'daily';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = localStorage.getItem('user');
+            return; }
+            
+
+
+();
+
+            document.querySelectorAll('.report-controls .btn[data-period]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const target = e.currentTarget;
+                    const period = target.getAttribute('data-period');
+                    
+                    if (!period) return;
+
+                    document.querySelectorAll('.report-controls .btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+                    document.querySelectorAll('.report-controls .btn').forEach(b => b.classList.add('btn-secondary'));
+                    
+                    target.classList.remove('btn-secondary');
+                    target.classList.add('btn-primary', 'active');
+                    
+                    currentPeriod = period;
+                    updateUI();
+                });
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                new AuthService().logout().then(() => window.location.href = 'login.php');
+            });
+
+            document.getElementById('btnPdf').addEventListener('click', downloadPDF);
+            document.getElementById('btnExcel').addEventListener('click', downloadExcel);
+        });
+
+        async function downloadPDF() {
+            const periodLabel = document.querySelector('.report-controls .active').textContent;
+            const data = reportData.periods[currentPeriod];
+            
+            // Create a completely fresh container for PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '30px';
+            pdfContainer.style.background = '#ffffff';
+
+            pdfContainer.innerHTML = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <!-- Executive Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1e40af; padding-bottom: 15px; margin-bottom: 25px;">
+                        <div>
+                            <h1 style="margin: 0; color: #1e40af; font-size: 26px; letter-spacing: 1px;">SHERIFF SHEVVY ENTERPRISES</h1>
+                            <p style="margin: 5px 0 0; color: #64748b; font-size: 13px; font-weight: bold;">Tech Operations & Inventory Control System</p>
+                            <p style="margin: 2px 0 0; color: #64748b; font-size: 11px;">Official Performance Record</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="background: #1e40af; color: white; padding: 8px 15px; font-size: 14px; font-weight: bold; border-radius: 4px; margin-bottom: 5px;">
+                                ${periodLabel.toUpperCase()} REPORT
+                            </div>
+                            <p style="margin: 0; font-size: 11px; color: #94a3b8;">Ref: ${new Date().getTime().toString().slice(-8)}</p>
+                        </div>
+                    </div>
+
+                    <!-- Report Sub-Header -->
+                    <div style="background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 25px; border: 1px solid #e2e8f0;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <p style="margin: 0; font-size: 11px; color: #64748b; text-transform: uppercase;">Generated On</p>
+                                <p style="margin: 3px 0 0; font-size: 13px; font-weight: bold;">${new Date().toLocaleString()}</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <p style="margin: 0; font-size: 11px; color: #64748b; text-transform: uppercase;">Reporting Period</p>
+                                <p style="margin: 3px 0 0; font-size: 13px; font-weight: bold;">${periodLabel}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Performance Metrics (Cards) -->
+                    <div style="display: flex; gap: 15px; margin-bottom: 30px;">
+                        <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #1e40af; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">Total Revenue</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #1e40af;">${Utils.formatCurrency(data.total_revenue)}</div>
+                        </div>
+                        <div style="flex: 1; background: #ecfdf5; border: 1px solid #6ee7b7; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #065f46; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">Transactions</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #065f46;">${data.transaction_count}</div>
+                        </div>
+                        <div style="flex: 1; background: #fefce8; border: 1px solid #fef08a; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #854d0e; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">Avg. Sale</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #854d0e;">${Utils.formatCurrency(data.average_sale)}</div>
+                        </div>
+                        <div style="flex: 1; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 15px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 10px; color: #5b21b6; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">Items Sold</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #5b21b6;">${data.total_items_sold}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px;">
+                        <!-- Top Products Table -->
+                        <div style="flex: 1.5;">
+                            <h3 style="font-size: 14px; color: #1e293b; margin-bottom: 10px; border-left: 4px solid #1e40af; padding-left: 10px;">TOP PRODUCTS BY REVENUE</h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #1e40af; color: white;">
+                                        <th style="padding: 10px; text-align: left; border-radius: 4px 0 0 0;">Product Description</th>
+                                        <th style="padding: 10px; text-align: center;">Qty</th>
+                                        <th style="padding: 10px; text-align: right; border-radius: 0 4px 0 0;">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${reportData.top_products.map((p, i) => `
+                                        <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #f1f5f9;">
+                                            <td style="padding: 8px 10px; font-weight: bold;">${p.product_name}</td>
+                                            <td style="padding: 8px 10px; text-align: center;">${p.total_quantity}</td>
+                                            <td style="padding: 8px 10px; text-align: right; font-weight: bold;">${Utils.formatCurrency(p.total_revenue)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Payment Breakdown Table -->
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 14px; color: #1e293b; margin-bottom: 10px; border-left: 4px solid #059669; padding-left: 10px;">PAYMENT METHODS</h3>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                <thead>
+                                    <tr style="background: #059669; color: white;">
+                                        <th style="padding: 10px; text-align: left; border-radius: 4px 0 0 0;">Method</th>
+                                        <th style="padding: 10px; text-align: right; border-radius: 0 4px 0 0;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${reportData.payment_breakdown.map((p, i) => `
+                                        <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f0fdf4'}; border-bottom: 1px solid #f1f5f9;">
+                                            <td style="padding: 8px 10px; font-weight: bold; color: #059669;">${p.payment_method}</td>
+                                            <td style="padding: 8px 10px; text-align: right; font-weight: bold;">${Utils.formatCurrency(p.amount)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            
+                            <div style="margin-top: 20px; padding: 15px; background: #fef2f2; border: 1px dashed #ef4444; border-radius: 8px;">
+                                <p style="margin: 0; font-size: 10px; color: #b91c1c; font-weight: bold;">SYSTEM NOTICE:</p>
+                                <p style="margin: 5px 0 0; font-size: 10px; color: #b91c1c;">All calculations are verified against the central transaction ledger.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div style="margin-top: 40px; padding-top: 15px; border-top: 1px solid #e2e8f0; text-align: center;">
+                        <p style="margin: 0; font-size: 10px; color: #94a3b8;">
+                            Secure Document Generated by SHERIFF SHEVVY ENTERPRISES IMS • Restricted Access Only
+                        </p>
+                        <p style="margin: 5px 0 0; font-size: 9px; color: #cbd5e1;">© ${new Date().getFullYear()} SHERIFF SHEVVY. All Rights Reserved.</p>
+                    </div>
+                </div>
+            `;
+
+            const cleanFileName = `OfficialReport_${periodLabel.replace(/\s/g, '')}.pdf`;
+            const opt = {
+                margin: [0.3, 0.3],
+                filename: cleanFileName,
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Generate as blob to handle potential system-level permission issues
+            html2pdf().set(opt).from(pdfContainer).toPdf().get('pdf').then(function (pdf) {
+                const blob = pdf.output('blob');
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = cleanFileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+            });
+        }
+
+        function downloadExcel() {
+            const periodLabel = document.querySelector('.report-controls .active').textContent;
+            if (!reportData) {
+                alert('Still loading report data. Please wait a moment and try again.');
+                return;
+            }
+            const data = reportData.periods?.[currentPeriod];
+            
+            if (!data) {
+                alert(`No data found for the selected period (${currentPeriod}).`);
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const dateStr = new Date().toLocaleString();
+
+            // 1. SUMMARY SHEET
+            const summaryData = [
+                ["SHERIFF SHEVVY ENTERPRISES - INVENTORY MANAGEMENT SYSTEM"],
+                ["OFFICIAL SALES PERFORMANCE SUMMARY"],
+                ["Period:", periodLabel],
+                ["Generated On:", dateStr],
+                [""],
+                ["Metric", "Value", "Currency"],
+                ["Total Revenue", data.total_revenue, "NGN"],
+                ["Total Transactions", data.transaction_count, "Count"],
+                ["Average Transaction Value", data.average_sale, "NGN"],
+                ["Total Items Sold", data.total_items_sold, "Units"],
+                [""],
+                ["PAYMENT BREAKDOWN"],
+                ["Method", "Count", "Amount (NGN)"]
+            ];
+            
+            reportData.payment_breakdown.forEach(p => {
+                summaryData.push([p.payment_method, p.transaction_count, p.amount]);
+            });
+
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            wsSummary['!cols'] = [{wch: 30}, {wch: 20}, {wch: 15}];
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Dashboard Summary");
+
+            // 2. PRODUCT PERFORMANCE
+            const productData = [
+                ["SHERIFF SHEVVY ENTERPRISES - PRODUCT PERFORMANCE RANKINGS"],
+                ["Period:", periodLabel],
+                [""],
+                ["Rank", "Product Name", "Units Sold", "Total Revenue (NGN)", "% of Total"]
+            ];
+
+            reportData.top_products.forEach((p, index) => {
+                const percent = ((p.total_revenue / data.total_revenue) * 100).toFixed(1) + '%';
+                productData.push([index + 1, p.product_name, p.total_quantity, p.total_revenue, percent]);
+            });
+
+            const wsProducts = XLSX.utils.aoa_to_sheet(productData);
+            wsProducts['!cols'] = [{wch: 8}, {wch: 40}, {wch: 15}, {wch: 25}, {wch: 15}];
+            XLSX.utils.book_append_sheet(wb, wsProducts, "Top Selling Products");
+
+            // 3. DETAILED TRANSACTION LOG
+            const logData = [
+                ["SHERIFF SHEVVY ENTERPRISES - COMPLETE TRANSACTION LOG"],
+                ["Date Range:", periodLabel],
+                [""],
+                ["Date", "Invoice #", "Customer", "Product", "Qty", "Unit Price", "Subtotal", "Payment Method"]
+            ];
+
+            reportData.sales_details.forEach(s => {
+                logData.push([
+                    s.sale_date,
+                    s.invoice_number,
+                    s.customer_name || 'Walk-in',
+                    s.product_name,
+                    s.quantity_sold,
+                    s.unit_price,
+                    s.line_total,
+                    s.payment_method
+                ]);
+            });
+
+            const wsLog = XLSX.utils.aoa_to_sheet(logData);
+            wsLog['!cols'] = [{wch: 12}, {wch: 15}, {wch: 20}, {wch: 35}, {wch: 10}, {wch: 15}, {wch: 15}, {wch: 15}];
+            XLSX.utils.book_append_sheet(wb, wsLog, "Detailed Sales Log");
+
+            // Save the file
+            const fileName = `TechApp_FinanceReport_${periodLabel.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        async function loadReports() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/reports/sales-summary.php';
+                const response = await fetch(basePath);
+                if (!response.ok) throw new Error('Server returned an error');
+                const result = await response.json();
+                
+                if (result.success) {
+                    reportData = result.data;
+                    updateUI();
+                } else {
+                    alert('Error loading reports: ' + result.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Failed to connect to reports API. Please check your connection.');
+            }
+        }
+
+        function updateUI() {
+            if (!reportData || !reportData.periods) return;
+            const data = reportData.periods[currentPeriod];
+            
+            if (!data) {
+                console.warn('No data found for period:', currentPeriod);
+                return;
+            }
+            
+            document.getElementById('revenueMetric').textContent = Utils.formatCurrency(data.total_revenue);
+            document.getElementById('transactionsMetric').textContent = data.transaction_count;
+            document.getElementById('avgMetric').textContent = Utils.formatCurrency(data.average_sale);
+            document.getElementById('itemsMetric').textContent = data.total_items_sold;
+
+            // Update Top Products
+            const topProductsBody = document.getElementById('topProductsBody');
+            topProductsBody.innerHTML = reportData.top_products.map(p => `
+                <tr>
+                    <td>${p.product_name}</td>
+                    <td>${p.total_quantity}</td>
+                    <td>${Utils.formatCurrency(p.total_revenue)}</td>
+                </tr>
+            `).join('');
+
+            // Update Payments
+            const paymentsBody = document.getElementById('paymentsBody');
+            paymentsBody.innerHTML = reportData.payment_breakdown.map(p => `
+                <tr>
+                    <td><span class="badge badge-info">${p.payment_method}</span></td>
+                    <td>${p.transaction_count}</td>
+                    <td>${Utils.formatCurrency(p.amount)}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

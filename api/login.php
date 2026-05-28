@@ -6,12 +6,16 @@
 // For testing from CLI
 if (php_sapi_name() === 'cli') {
     $_SERVER['REQUEST_METHOD'] = 'POST';
-    $_POST['email'] = 'admin@techapp.com';
+    $_POST['email'] = 'admin@sheriffenterprises.com';
     $_POST['password'] = 'Admin@123';
 }
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . '/../app/config/Config.php';
 require_once __DIR__ . '/../app/config/DatabaseConnection.php';
@@ -60,6 +64,20 @@ try {
         exit;
     }
     
+    // Store in session for server-side role checks
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = $user['user_id'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_name'] = $user['name'];
+    $_SESSION['user_role'] = strtolower($user['role']);
+    $_SESSION['last_activity'] = time();
+    $_SESSION['user'] = [
+        'user_id' => $user['user_id'],
+        'name' => $user['name'],
+        'email' => $user['email'],
+        'role' => strtolower($user['role'])
+    ];
+    
     echo json_encode([
         'success' => true,
         'message' => 'Login successful',
@@ -72,7 +90,9 @@ try {
             ]
         ]
     ]);
+    exit;
     
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    exit;
 }

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returns Log - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Returns & Cancellations Log</h1>
+                <div class="flex gap-4 items-center">
+                    <span class="badge badge-warning" id="returnCount">0 Items Returned</span>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="card mb-6">
+                    <div class="flex gap-4 items-center flex-wrap">
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary active" data-period="all">All Time</button>
+                            <button class="btn btn-secondary" data-period="today">Today</button>
+                            <button class="btn btn-secondary" data-period="week">This Week</button>
+                            <button class="btn btn-secondary" data-period="month">This Month</button>
+                        </div>
+                        <div class="flex gap-2" style="border-left: 1px solid var(--border); padding-left: 1rem;">
+                            <button class="btn btn-info" id="downloadCSVBtn">📥 CSV</button>
+                            <button class="btn btn-primary" id="downloadPDFBtn">📄 PDF Report</button>
+                        </div>
+                        <div class="flex gap-2" style="margin-left: auto;">
+                            <input type="text" id="returnsSearchInput" class="form-control" placeholder="Search Customer, Invoice or Product..." style="max-width: 300px;">
+                            <input type="date" id="dateFilter" class="form-control" style="max-width: 150px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice#</th><th>Return Date</th><th>Product</th><th>Qty</th><th>Value</th><th>Customer</th><th>Reason/Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="returnsBody">
+                                <tr><td colspan="7" class="empty-state">Loading returns history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card mt-6">
+                    <div class="card-header"><h3 class="card-title">Customer Return Frequency</h3></div>
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Customer Name</th><th>Return Count</th><th>Total Value Reversed</th></tr>
+                            </thead>
+                            <tbody id="customerReturnsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden PDF Template -->
+    <div id="pdfTemplate" style="display: none; padding: 30px; font-family: Arial, sans-serif; color: #333;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e40af; padding-bottom: 20px; margin-bottom: 30px;">
+            <div>
+                <h1 style="color: #1e40af; margin: 0; font-size: 24px;">SHERIFF SHEVVY ENTERPRISES</h1>
+                <p style="margin: 5px 0; color: #666; font-size: 14px;">Returns & Cancellations Report</p>
+                <p style="margin: 2px 0; font-size: 11px;">Phone: +234 803 248 8020</p>
+                <p style="margin: 2px 0; font-size: 11px;">Lalubu Street, Oke-Ilewo, Ibara, Abeokuta, Ogun State, Nigeria</p>
+            </div>
+            <div style="text-align: right;">
+                <h2 style="margin: 0; color: #333; font-size: 18px;">INTERNAL AUDIT</h2>
+                <p style="margin: 5px 0; font-weight: bold; color: #1e40af;" id="pdf-period">Period: ALL TIME</p>
+                <p style="margin: 2px 0; font-size: 11px;" id="pdf-gen-date"></p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+                <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold;">Total Returns</span>
+                <p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: #1e40af;" id="pdf-stat-count">0</p>
+            </div>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+                <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold;">Total Value Recovered</span>
+                <p style="margin: 5px 0; font-size: 18px; font-weight: bold; color: #059669;" id="pdf-stat-value">₦0.00</p>
+            </div>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+                <span style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: bold;">Primary Returner</span>
+                <p style="margin: 5px 0; font-size: 14px; font-weight: bold; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="pdf-stat-top">N/A</p>
+            </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+            <thead>
+                <tr style="background: #1e40af; color: white;">
+                    <th style="padding: 10px; text-align: left; font-size: 11px;">INVOICE</th>
+                    <th style="padding: 10px; text-align: left; font-size: 11px;">DATE</th>
+                    <th style="padding: 10px; text-align: left; font-size: 11px;">PRODUCT</th>
+                    <th style="padding: 10px; text-align: center; font-size: 11px;">QTY</th>
+                    <th style="padding: 10px; text-align: right; font-size: 11px;">VALUE</th>
+                    <th style="padding: 10px; text-align: left; font-size: 11px;">CUSTOMER</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body"></tbody>
+        </table>
+
+        <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 10px; color: #999; text-align: center;">
+            <p>This report was generated automatically from the SHERIFF SHEVVY ENTERPRISES Inventory System.</p>
+            <p>Confidential Business Document</p>
+        </div>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script src="js/services/apiClient.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        let returnsData = [];
+        let currentPeriod = 'all';
+        let currentFilteredData = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = localStorage.getItem('user');
+            if (!user) { window.location.href = 'login.php'; return; }
+            
+
+            await loadReturns();
+
+            document.getElementById('returnsSearchInput').addEventListener('input', applyFilters);
+            document.getElementById('dateFilter').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    currentPeriod = 'all';
+                    document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active', 'btn-primary'));
+                    document.querySelector('[data-period="all"]').classList.add('active', 'btn-primary');
+                }
+                applyFilters();
+            });
+            
+            document.querySelectorAll('[data-period]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active', 'btn-primary'));
+                    e.currentTarget.classList.add('active', 'btn-primary');
+                    currentPeriod = e.currentTarget.dataset.period;
+                    document.getElementById('dateFilter').value = '';
+                    applyFilters();
+                });
+            });
+
+            document.getElementById('downloadCSVBtn').addEventListener('click', downloadCSV);
+            document.getElementById('downloadPDFBtn').addEventListener('click', downloadPDF);
+            
+            document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('user');
+                window.location.href = 'login.php';
+            });
+        });
+
+        async function loadReturns() {
+            try {
+                const response = await fetch('api/sales.php?limit=1000');
+                const result = await response.json();
+                if (result.success) {
+                    returnsData = result.data.data.filter(s => s.payment_status === 'returned');
+                    applyFilters();
+                }
+            } catch (error) { console.error('Error loading returns:', error); }
+        }
+
+        function applyFilters() {
+            const query = (document.getElementById('returnsSearchInput').value || '').toLowerCase();
+            const date = document.getElementById('dateFilter').value;
+            
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            
+            const filtered = returnsData.filter(r => {
+                const matchesQuery = 
+                    r.invoice_number.toLowerCase().includes(query) || 
+                    r.product_name.toLowerCase().includes(query) ||
+                    (r.customer_name && r.customer_name.toLowerCase().includes(query));
+                
+                let matchesDate = true;
+                if (date) {
+                    matchesDate = r.sale_date === date;
+                } else if (currentPeriod === 'today') {
+                    matchesDate = r.sale_date === today;
+                } else if (currentPeriod === 'week') {
+                    const rDate = new Date(r.sale_date);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(now.getDate() - 7);
+                    matchesDate = rDate >= weekAgo;
+                } else if (currentPeriod === 'month') {
+                    const rDate = new Date(r.sale_date);
+                    matchesDate = rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+                }
+
+                return matchesQuery && matchesDate;
+            });
+
+            currentFilteredData = filtered;
+            renderReturns(filtered);
+            document.getElementById('returnCount').textContent = `${filtered.length} Items Returned`;
+            renderCustomerStats(filtered);
+        }
+
+        function renderReturns(data) {
+            const tbody = document.getElementById('returnsBody');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No return records found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(r => `
+                <tr class="returned-row">
+                    <td><code>${r.invoice_number}</code></td>
+                    <td>${new Date(r.sale_date).toLocaleDateString()}</td>
+                    <td>${r.product_name}</td>
+                    <td>${r.quantity_sold}</td>
+                    <td><strong>${Utils.formatCurrency(r.line_total)}</strong></td>
+                    <td>${r.customer_name || 'Walk-in'}</td>
+                    <td><small>${r.notes || 'No reason provided'}</small></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCustomerStats(dataToUse) {
+            const stats = {};
+            dataToUse.forEach(r => {
+                const name = r.customer_name || 'Walk-in';
+                if (!stats[name]) stats[name] = { count: 0, total: 0 };
+                stats[name].count++;
+                stats[name].total += parseFloat(r.line_total);
+            });
+
+            const sorted = Object.entries(stats).sort((a, b) => b[1].count - a[1].count);
+            const tbody = document.getElementById('customerReturnsBody');
+            
+            if (!sorted.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map(([name, data]) => `
+                <tr>
+                    <td><strong>${name}</strong></td>
+                    <td><span class="badge ${data.count > 2 ? 'badge-danger' : 'badge-warning'}">${data.count} Returns</span></td>
+                    <td>${Utils.formatCurrency(data.total)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function downloadCSV() {
+            if (!currentFilteredData.length) { alert('No data to export'); return; }
+            
+            const headers = ['Invoice#', 'Date', 'Product', 'Quantity', 'Value', 'Customer', 'Reason'];
+            const rows = currentFilteredData.map(r => [
+                r.invoice_number,
+                r.sale_date,
+                `"${r.product_name.replace(/"/g, '""')}"`,
+                r.quantity_sold,
+                r.line_total,
+                `"${(r.customer_name || 'Walk-in').replace(/"/g, '""')}"`,
+                `"${(r.notes || '').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Returns_Report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function downloadPDF() {
+            if (!currentFilteredData.length) { alert('No data to export'); return; }
+            
+            const template = document.getElementById('pdfTemplate');
+            
+            // Calculate stats for PDF
+            const totalValue = currentFilteredData.reduce((sum, r) => sum + parseFloat(r.line_total), 0);
+            const customerCounts = {};
+            currentFilteredData.forEach(r => {
+                const name = r.customer_name || 'Walk-in';
+                customerCounts[name] = (customerCounts[name] || 0) + 1;
+            });
+            const topCustomer = Object.entries(customerCounts).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A';
+
+            // Inject data
+            document.getElementById('pdf-period').textContent = 'Period: ' + currentPeriod.toUpperCase();
+            document.getElementById('pdf-gen-date').textContent = 'Generated: ' + new Date().toLocaleString();
+            document.getElementById('pdf-stat-count').textContent = currentFilteredData.length;
+            document.getElementById('pdf-stat-value').textContent = Utils.formatCurrency(totalValue);
+            document.getElementById('pdf-stat-top').textContent = topCustomer;
+
+            const tbody = document.getElementById('pdf-table-body');
+            tbody.innerHTML = currentFilteredData.map(r => `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 10px; font-size: 11px;"><code>${r.invoice_number}</code></td>
+                    <td style="padding: 10px; font-size: 11px;">${new Date(r.sale_date).toLocaleDateString()}</td>
+                    <td style="padding: 10px; font-size: 11px;">${r.product_name}</td>
+                    <td style="padding: 10px; text-align: center; font-size: 11px;">${r.quantity_sold}</td>
+                    <td style="padding: 10px; text-align: right; font-size: 11px;">${Utils.formatCurrency(r.line_total)}</td>
+                    <td style="padding: 10px; font-size: 11px;">${r.customer_name || 'Walk-in'}</td>
+                </tr>
+            `).join('');
+
+            const opt = {
+                margin: 0,
+                filename: `Returns_Log_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            template.style.display = 'block';
+            try {
+                await html2pdf().set(opt).from(template).save();
+            } finally {
+                template.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

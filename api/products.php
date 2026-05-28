@@ -2,6 +2,7 @@
 /**
  * Products API Handler
  */
+session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -16,11 +17,20 @@ require_once __DIR__ . '/../app/config/Config.php';
 require_once __DIR__ . '/../app/config/DatabaseConnection.php';
 
 Config::load();
+$role = strtolower($_SESSION['user']['role'] ?? '');
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
     $conn = DatabaseConnection::getConnection();
+
+    // RESTRICTION: Admins and Managers can manage products/prices
+    $isAuthorized = (in_array($role, ['admin', 'administrator', 'manager']));
+    
+    if (in_array($method, ['POST', 'PUT', 'DELETE'], true) && !$isAuthorized) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Admins and Managers can manage products and prices']);
+        exit;
+    }
 
     if ($method === 'GET') {
         $page = max(1, (int)($_GET['page'] ?? 1));
@@ -123,6 +133,10 @@ try {
         $description = trim((string)($data['description'] ?? ''));
         $reorderLevel = max(0, (int)($data['reorder_level'] ?? 10));
         $unit = trim((string)($data['unit_of_measurement'] ?? 'pieces'));
+        $imageUrl = trim((string)($data['image_url'] ?? ''));
+        $isFeatured = (int)($data['is_featured'] ?? 0);
+        $minPrice = isset($data['min_price']) ? (float)$data['min_price'] : null;
+        $maxPrice = isset($data['max_price']) ? (float)$data['max_price'] : null;
 
         if ($productName === '' || $category === '') {
             echo json_encode(['success' => false, 'message' => 'Product name and category are required']);
@@ -153,17 +167,21 @@ try {
         );
 
         $stmt = $conn->prepare("INSERT INTO products
-                                (uuid, sku, product_name, category, subcategory, description, selling_price, cost_price, reorder_level, unit_of_measurement, is_active)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
+                                (uuid, sku, product_name, category, subcategory, description, image_url, is_featured, selling_price, min_price, max_price, cost_price, reorder_level, unit_of_measurement, is_active)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)");
         $stmt->bind_param(
-            'ssssssddis',
+            'sssssssiddddis',
             $uuid,
             $sku,
             $productName,
             $category,
             $subcategory,
             $description,
+            $imageUrl,
+            $isFeatured,
             $sellingPrice,
+            $minPrice,
+            $maxPrice,
             $costPrice,
             $reorderLevel,
             $unit
@@ -203,6 +221,10 @@ try {
         $description = trim((string)($data['description'] ?? ''));
         $reorderLevel = max(0, (int)($data['reorder_level'] ?? 10));
         $unit = trim((string)($data['unit_of_measurement'] ?? 'pieces'));
+        $imageUrl = trim((string)($data['image_url'] ?? ''));
+        $isFeatured = (int)($data['is_featured'] ?? 0);
+        $minPrice = isset($data['min_price']) ? (float)$data['min_price'] : null;
+        $maxPrice = isset($data['max_price']) ? (float)$data['max_price'] : null;
 
         if ($productName === '' || $category === '') {
             echo json_encode(['success' => false, 'message' => 'Product name and category are required']);
@@ -215,19 +237,27 @@ try {
                                     category = ?,
                                     subcategory = ?,
                                     description = ?,
+                                    image_url = ?,
+                                    is_featured = ?,
                                     selling_price = ?,
+                                    min_price = ?,
+                                    max_price = ?,
                                     cost_price = ?,
                                     reorder_level = ?,
                                     unit_of_measurement = ?
                                 WHERE product_id = ?");
         $stmt->bind_param(
-            'sssssddisi',
+            'ssssssiddddisi',
             $sku,
             $productName,
             $category,
             $subcategory,
             $description,
+            $imageUrl,
+            $isFeatured,
             $sellingPrice,
+            $minPrice,
+            $maxPrice,
             $costPrice,
             $reorderLevel,
             $unit,
@@ -239,6 +269,15 @@ try {
         // Update inventory record
         if (isset($data['quantity_on_hand'])) {
             $qty = (int)$data['quantity_on_hand'];
+            $addStock = !empty($data['add_stock']);
+
+            if ($addStock) {
+                // Add to existing stock instead of replacing
+                $curr = $conn->query("SELECT quantity_on_hand FROM inventory WHERE product_id = $productId")->fetch_assoc();
+                $currentQty = (int)($curr['quantity_on_hand'] ?? 0);
+                $qty = $currentQty + $qty;
+            }
+
             $status = ($qty <= 0) ? 'out_of_stock' : (($qty <= $reorderLevel) ? 'low_stock' : 'in_stock');
             
             $invStmt = $conn->prepare("INSERT INTO inventory (product_id, quantity_on_hand, status) 

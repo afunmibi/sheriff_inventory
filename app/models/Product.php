@@ -11,7 +11,7 @@ class Product extends BaseModel {
     protected array $fillable = [
         'uuid', 'sku', 'product_name', 'category', 'subcategory',
         'description', 'specifications', 'cost_price', 'selling_price',
-        'reorder_level', 'unit_of_measurement', 'image_url', 'is_active'
+        'reorder_level', 'unit_of_measurement', 'image_url', 'is_featured', 'is_active'
     ];
     protected array $casts = [
         'specifications' => 'json',
@@ -100,11 +100,12 @@ class Product extends BaseModel {
         $sql = "SELECT p.*, 
                 COALESCE(i.quantity_on_hand, 0) AS stock_quantity,
                 COALESCE(i.quantity_available, 0) AS available_quantity,
-                COALESCE(i.status, 'out_of_stock') AS stock_status
+                COALESCE(i.status, 'out_of_stock') AS stock_status,
+                (SELECT pi.image_url FROM product_images pi WHERE pi.product_id = p.product_id ORDER BY pi.sort_order ASC, pi.image_id ASC LIMIT 1) AS gallery_image
                 FROM products p
                 LEFT JOIN inventory i ON p.product_id = i.product_id
-                WHERE p.is_active = 1
-                ORDER BY p.product_name ASC";
+                WHERE p.is_active = 1 AND p.is_featured = 1
+                ORDER BY p.created_at DESC";
         
         return $this->executeRaw($sql)->fetch_all(MYSQLI_ASSOC);
     }

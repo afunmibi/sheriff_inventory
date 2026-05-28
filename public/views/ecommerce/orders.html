@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Store Orders - SHERIFF SHEVVY</title>
+    <link rel="stylesheet" href="../assets/css/style.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+        <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+        <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>Exit</span> Logout</a></div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <h1 class="page-title">Store Orders</h1>
+            <p class="page-subtitle">Online orders awaiting fulfillment</p>
+          </div>
+          <a class="btn btn-primary" href="ecommerce-dashboard.html">Store Dashboard</a>
+        </header>
+
+        <div class="content">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Recent Web Orders</h2>
+              <button class="btn btn-secondary btn-sm" id="refreshBtn">Refresh</button>
+            </div>
+            <div class="data-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Invoice</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersBody">
+                  <tr><td colspan="7" class="empty-state">Loading orders...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="../assets/js/core/utils.js"></script>
+    <script src="../assets/js/services/apiClient.js"></script>
+    <script>
+      const user = Utils.storage.get('user');
+      if (!user) window.location.href = 'login.php';
+
+      Utils.initSidebar('store');
+
+      const ordersBody = document.getElementById('ordersBody');
+      const refreshBtn = document.getElementById('refreshBtn');
+
+      async function loadOrders() {
+        ordersBody.innerHTML = '<tr><td colspan="7" class="empty-state">Loading orders...</td></tr>';
+        try {
+          const response = await fetch('api/web_order.php', { credentials: 'same-origin' });
+          const result = await response.json();
+          const orders = result.data || [];
+
+          if (!orders.length) {
+            ordersBody.innerHTML = '<tr><td colspan="7" class="empty-state">No online orders yet</td></tr>';
+            return;
+          }
+
+          ordersBody.innerHTML = orders.map(order => `
+            <tr>
+              <td><code>${order.invoice_number || '-'}</code></td>
+              <td>${order.customer_name || '-'}</td>
+              <td>${order.customer_phone || '-'}</td>
+              <td>${order.product_name || order.sku || '-'}</td>
+              <td>${order.quantity_sold || 0}</td>
+              <td><span class="badge badge-warning">${order.payment_status || 'pending'}</span></td>
+              <td>${Utils.formatDate(order.sale_date || order.created_at)}</td>
+            </tr>
+          `).join('');
+        } catch (error) {
+          ordersBody.innerHTML = '<tr><td colspan="7" class="empty-state">Unable to load orders</td></tr>';
+        }
+      }
+
+      refreshBtn.addEventListener('click', loadOrders);
+      document.getElementById('logoutBtn').addEventListener('click', (event) => {
+        event.preventDefault();
+        new AuthService().logout().then(() => window.location.href = 'login.php');
+      });
+
+      loadOrders();
+    </script>
+  </body>
+</html>

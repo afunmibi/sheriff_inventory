@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+      .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
+      .data-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+      .data-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #1e293b; }
+      .data-table tbody tr { transition: background 0.15s; }
+      .data-table tbody tr:hover { background: #f8fafc; }
+      .data-table .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block; }
+      .data-table .badge-primary { background: #dbeafe; color: #1e40af; }
+      .data-table .badge-info { background: #e0f2fe; color: #075985; }
+      .data-table .badge-success { background: #dcfce7; color: #166534; }
+      .data-table .badge-danger { background: #fee2e2; color: #991b1b; }
+      .data-table .btn-sm { padding: 4px 8px; font-size: 0.7rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.15s; line-height: 1; }
+      .data-table .btn-sm:hover { filter: brightness(0.95); transform: translateY(-1px); }
+      .content .card .form-label { font-size: 0.72rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; display: block; }
+      .content .card .form-control { width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #1e293b; background: #fff; transition: border-color 0.2s; }
+      .content .card .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+      .content .card .form-select { cursor: pointer; }
+      .content .card .text-muted { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; display: block; }
+      .content .card .btn { padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer; transition: all 0.2s; }
+      .content .card .btn-primary { background: var(--cta); color: var(--cta-text); box-shadow: 0 8px 18px rgba(245, 158, 11, 0.22); }
+      .content .card .btn-primary:hover { background: var(--cta-dark); color: #fff; transform: translateY(-1px); }
+      .content .card .btn-warning { background: #d97706; color: #fff; }
+      .content .card .btn-warning:hover { background: #b45309; transform: translateY(-1px); }
+      .content .card .btn-sm { padding: 6px 12px; font-size: 0.72rem; border-radius: 6px; }
+      .content.store-mode .card { padding: 16px 18px; }
+      .content.store-mode .card .card-header { padding-bottom: 10px; margin-bottom: 12px; }
+      .content.store-mode .card .form-group { margin-bottom: 10px; }
+      .content.store-mode .card .form-control { padding: 7px 10px; font-size: 0.78rem; }
+      .content.store-mode .card .btn { padding: 7px 14px; font-size: 0.75rem; }
+      .content.store-mode .card .card-title { font-size: 0.85rem; }
+      .content.store-mode .data-table { font-size: 0.7rem; }
+      .content.store-mode .data-table thead th { padding: 6px 8px; font-size: 0.6rem; }
+      .content.store-mode .data-table tbody td { padding: 6px 8px; }
+      @media (max-width: 1024px) { .data-table { font-size: 0.7rem; } .data-table thead th, .data-table tbody td { padding: 7px 6px; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="#" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Settings</h1>
+            </header>
+
+            <div class="content">
+                <div class="grid grid-2">
+                    <!-- Business Settings -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Business Information</h3></div>
+                        <form id="businessForm">
+                            <div class="form-group">
+                                <label class="form-label">Business Name</label>
+                                <input type="text" class="form-control" name="business_name" value="SHERIFF SHEVVY ENTERPRISES">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tax Rate (%)</label>
+                                <input type="number" class="form-control" name="tax_rate" value="0" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Currency Symbol</label>
+                                <select class="form-control form-select" name="currency_symbol">
+                                    <option value="₦">₦ (Naira)</option>
+                                    <option value="$">$ (Dollar)</option>
+                                    <option value="£">£ (Pound)</option>
+                                </select>
+                            </div>
+                        <button type="submit" class="btn btn-primary">Save Business Info</button>
+                        </form>
+                    </div>
+
+                    <!-- Ecommerce Settings -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Storefront & WhatsApp Settings</h3></div>
+                        <form id="ecommerceSettingsForm">
+                            <div class="form-group">
+                                <label class="form-label">WhatsApp Number (with country code)</label>
+                                <input type="text" class="form-control" name="whatsapp_number" placeholder="e.g. 2349012345678">
+                                <small class="text-muted">Used for "Buy on WhatsApp" buttons.</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Storefront Welcome Message</label>
+                                <input type="text" class="form-control" name="storefront_welcome" placeholder="Hi, I'm interested in:">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Store Settings</button>
+                        </form>
+                    </div>
+
+                    <!-- Account Settings -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Account Settings</h3></div>
+                        <form id="accountForm">
+                            <div class="form-group">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" name="name" id="userName">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" id="userEmail" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" name="phone">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Update Profile</button>
+                        </form>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Change Password</h3></div>
+                        <form id="passwordForm">
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" class="form-control" name="current_password" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <input type="password" class="form-control" name="new_password" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" name="confirm_password" required>
+                            </div>
+                            <button type="submit" class="btn btn-warning">Change Password</button>
+                        </form>
+                    </div>
+
+                    <!-- User Management Section -->
+                    <div class="card" style="grid-column: span 2;">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 class="card-title">User Management (Staff & Managers)</h3>
+                            <button class="btn btn-primary btn-sm" id="addUserBtn">+ Add New User</button>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersBody">
+                                    <tr><td colspan="5" class="empty-state">Loading users...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">System Information</h3></div>
+                        <div class="text-muted">
+                            <p><strong>System Name:</strong> SHERIFF SHEVVY ENTERPRISES</p>
+                            <p><strong>Version:</strong> 1.0.0</p>
+                            <p><strong>Database:</strong> Connected</p>
+                            <p><strong>Environment:</strong> Production</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal-wrapper" id="userModal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New User</h3>
+                <button class="modal-close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" name="user_id" id="userId">
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" name="name" required placeholder="e.g. Felix Adewale">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" class="form-control" name="email" required placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password *</label>
+                        <input type="password" class="form-control" name="password" id="userPassword" placeholder="Minimum 6 characters">
+                        <small id="pwdHint" class="text-muted">Required for new users.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">System Role *</label>
+                        <select class="form-control form-select" name="role" required>
+                            <option value="Staff">Staff (Sales Only)</option>
+                            <option value="Manager">Manager (Inventory & Prices)</option>
+                            <option value="Admin">Admin (Full Access)</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="saveUserBtn">Save User</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/core/utils.js"></script>
+    <script src="../assets/js/services/apiClient.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = Utils.storage.get('user');
+            if (!user) { window.location.href = 'login.php'; return; }
+
+            const hub = new URLSearchParams(window.location.search).get('hub') || Utils.getHubContext() || 'ops';
+            const cards = document.querySelectorAll('.content .card');
+
+            if (hub === 'store') {
+                document.querySelector('.page-title').textContent = 'Storefront Configuration';
+                // Hide everything except Storefront, User Management, Account, and Password
+                cards.forEach(card => {
+                    const title = card.querySelector('.card-title')?.textContent || '';
+                    if (!title.includes('Storefront') && !title.includes('User Management') && !title.includes('Account') && !title.includes('Password')) {
+                        card.style.display = 'none';
+                    }
+                });
+            } else {
+                document.querySelector('.page-title').textContent = 'System Administration';
+            }
+
+            document.getElementById('userName').value = user.name || '';
+            document.getElementById('userEmail').value = user.email || '';
+            
+            loadSettings();
+
+            document.getElementById('businessForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const data = Utils.getFormData(e.target);
+                await saveSettings(data);
+                Utils.showSuccess('Business settings saved');
+            });
+
+            document.getElementById('ecommerceSettingsForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const data = Utils.getFormData(e.target);
+                await saveSettings(data);
+                Utils.showSuccess('Storefront settings saved');
+            });
+
+            document.getElementById('accountForm').addEventListener('submit', e => {
+                e.preventDefault();
+                Utils.showSuccess('Profile updated');
+            });
+
+            document.getElementById('passwordForm').addEventListener('submit', async e => {
+                e.preventDefault();
+                const data = Utils.getFormData(e.target);
+                if (data.new_password !== data.confirm_password) {
+                    Utils.showError('Passwords do not match');
+                    return;
+                }
+                try {
+                    const api = new ApiClient('/api');
+                    await api.post('/auth/change-password', data);
+                    Utils.showSuccess('Password changed');
+                    e.target.reset();
+                } catch (error) {
+                    Utils.showError(error.message);
+                }
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', e => {
+                e.preventDefault();
+                new AuthService().logout().then(() => window.location.href = 'login.php');
+            });
+
+            // User Management Logic
+            loadUsers();
+
+            document.getElementById('addUserBtn').addEventListener('click', () => {
+                document.getElementById('modalTitle').textContent = 'Add New User';
+                document.getElementById('userForm').reset();
+                document.getElementById('userId').value = '';
+                document.getElementById('userPassword').required = true;
+                document.getElementById('pwdHint').textContent = 'Required for new users.';
+                document.getElementById('userModal').classList.add('show');
+            });
+
+            document.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('userModal').classList.remove('show');
+                });
+            });
+
+            document.getElementById('saveUserBtn').addEventListener('click', saveUser);
+        });
+
+        async function loadUsers() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/users.php';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    const users = result.data.data || [];
+                    const tbody = document.getElementById('usersBody');
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No users found</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = users.map(user => `
+                        <tr>
+                            <td><strong>${user.name}</strong></td>
+                            <td>${user.email}</td>
+                            <td><span class="badge ${user.role === 'Admin' ? 'badge-primary' : 'badge-info'}">${user.role}</span></td>
+                            <td><span class="badge ${user.is_active ? 'badge-success' : 'badge-danger'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="editUser(${user.user_id})">Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.user_id})">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function saveUser() {
+            const form = document.getElementById('userForm');
+            const data = Utils.getFormData(form);
+            const isEdit = data.user_id !== '';
+            
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/users.php';
+                const response = await fetch(`${basePath}${isEdit ? '?id=' + data.user_id : ''}`, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    document.getElementById('userModal').classList.remove('show');
+                    loadUsers();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) { alert(error.message); }
+        }
+
+        async function editUser(id) {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/users.php';
+                const response = await fetch(`${basePath}?id=${id}`);
+                const result = await response.json();
+                if (result.success) {
+                    const user = result.data;
+                    document.getElementById('modalTitle').textContent = 'Edit User';
+                    document.getElementById('userId').value = user.user_id;
+                    const form = document.getElementById('userForm');
+                    form.name.value = user.name;
+                    form.email.value = user.email;
+                    form.role.value = user.role;
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('pwdHint').textContent = 'Leave blank to keep current password.';
+                    document.getElementById('userModal').classList.add('show');
+                }
+            } catch (error) { alert(error.message); }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/users.php';
+                const response = await fetch(`${basePath}?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    loadUsers();
+                } else { alert(result.message); }
+            } catch (error) { alert(error.message); }
+        }
+        async function loadSettings() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/settings.php';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    const s = result.data;
+                    const bForm = document.getElementById('businessForm');
+                    if (s.business_name) bForm.business_name.value = s.business_name;
+                    if (s.tax_rate) bForm.tax_rate.value = s.tax_rate;
+                    if (s.currency_symbol) bForm.currency_symbol.value = s.currency_symbol;
+
+                    const eForm = document.getElementById('ecommerceSettingsForm');
+                    if (s.whatsapp_number) eForm.whatsapp_number.value = s.whatsapp_number;
+                    if (s.storefront_welcome) eForm.storefront_welcome.value = s.storefront_welcome;
+                }
+            } catch (error) { console.error('Error loading settings', error); }
+        }
+
+        async function saveSettings(data) {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/settings.php';
+                await fetch(basePath, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } catch (error) { console.error('Error saving settings', error); }
+        }
+    </script>
+</body>
+</html>

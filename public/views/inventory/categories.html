@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Category Management</h1>
+            </header>
+
+            <div class="content">
+                <div class="grid grid-2" style="grid-template-columns: 1fr 2fr; gap: 30px;">
+                    <!-- Create Category Form -->
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title">Add New Category</h3></div>
+                        <div class="card-body">
+                            <form id="categoryForm">
+                                <div class="form-group">
+                                    <label class="form-label">Category Name *</label>
+                                    <input type="text" class="form-control" name="name" required placeholder="e.g. Chargers, Accessories">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" name="description" rows="4" placeholder="Brief description of products in this category..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-full" id="saveCategoryBtn">Save Category</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Category List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="flex justify-between items-center w-full">
+                                <h3 class="card-title">Existing Categories</h3>
+                                <input type="text" id="categorySearch" class="form-control" placeholder="Search categories..." style="max-width: 200px; font-size: 0.8rem; padding: 5px 10px;">
+                            </div>
+                        </div>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th><th>Description</th><th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryBody">
+                                    <tr><td colspan="3" class="empty-state">Loading categories...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../assets/js/core/utils.js"></script>
+    <script>
+        let allCategories = [];
+        let editingId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = Utils.storage.get('user');
+            return; }
+            
+
+
+();
+            
+            document.getElementById('categorySearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = allCategories.filter(c => 
+                    c.name.toLowerCase().includes(query) || 
+                    (c.description || '').toLowerCase().includes(query)
+                );
+                renderCategories(filtered);
+            });
+            
+            document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.querySelector('[name="name"]').value;
+                const description = document.querySelector('[name="description"]').value;
+                if (!name) return;
+
+                const saveBtn = document.getElementById('saveCategoryBtn');
+                saveBtn.disabled = true;
+                saveBtn.textContent = editingId ? 'Updating...' : 'Saving...';
+
+                try {
+                    const pathname = window.location.pathname;
+                    const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/categories.php';
+                    const url = editingId ? `${basePath}?id=${editingId}` : basePath;
+                    
+                    const response = await fetch(url, {
+                        method: editingId ? 'PUT' : 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, description })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        Utils.showSuccess ? Utils.showSuccess(editingId ? 'Category updated' : 'Category added') : alert(editingId ? 'Category updated' : 'Category added');
+                        resetForm();
+                        loadCategories();
+                    } else {
+                        alert(result.message);
+                    }
+                } catch (e) { alert('Error: ' + e.message); }
+                finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = editingId ? 'Update Category' : 'Save Category';
+                }
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', e => {
+                e.preventDefault();
+                Utils.storage.remove('user');
+                window.location.href = 'login.php';
+            });
+        });
+
+        function resetForm() {
+            editingId = null;
+            document.querySelector('.card-title').textContent = 'Add New Category';
+            document.getElementById('categoryForm').reset();
+            document.getElementById('saveCategoryBtn').textContent = 'Save Category';
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) cancelBtn.remove();
+        }
+
+        function editCategory(id) {
+            const cat = allCategories.find(c => c.category_id == id);
+            if (!cat) return;
+            
+            editingId = id;
+            document.querySelector('.card-title').textContent = 'Edit Category';
+            document.querySelector('[name="name"]').value = cat.name;
+            document.querySelector('[name="description"]').value = cat.description || '';
+            document.getElementById('saveCategoryBtn').textContent = 'Update Category';
+            
+            if (!document.getElementById('cancelEditBtn')) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.id = 'cancelEditBtn';
+                cancelBtn.className = 'btn btn-secondary w-full mt-2';
+                cancelBtn.textContent = 'Cancel Edit';
+                cancelBtn.onclick = resetForm;
+                document.getElementById('categoryForm').appendChild(cancelBtn);
+            }
+            
+            // Scroll to form
+            document.getElementById('categoryForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function loadCategories() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/categories.php';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    allCategories = result.data.data || [];
+                    renderCategories(allCategories);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderCategories(categoriesList) {
+            const tbody = document.getElementById('categoryBody');
+            if (!categoriesList.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No categories found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = categoriesList.map(c => `
+                <tr>
+                    <td><strong>${c.name}</strong><br><small class="text-muted">Added: ${new Date(c.created_at).toLocaleDateString()}</small></td>
+                    <td>${c.description || '-'}</td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-primary" onclick="editCategory(${c.category_id})">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${c.category_id})">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteCategory(id) {
+            if (!confirm('Are you sure? Categories in use by products cannot be deleted.')) return;
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/categories.php?id=' + id;
+                const response = await fetch(basePath, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    if (editingId == id) resetForm();
+                    loadCategories();
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) { console.error(e); }
+        }
+    </script>
+</body>
+</html>

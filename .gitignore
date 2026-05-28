@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+/storage/logs/
+/logs/
+/cache/
+/uploads/
+/public/uploads/
+*.log
+*.sql
+*.sqlite
+*.sqlite3
+*.bak
+*.backup
+*.pdf

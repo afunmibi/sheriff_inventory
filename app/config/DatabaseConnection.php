@@ -41,6 +41,8 @@ class DatabaseConnection {
             }
 
             self::$instance->set_charset($config['charset']);
+            self::$instance->query("SET SESSION wait_timeout = 28800");
+            self::$instance->query("SET SESSION interactive_timeout = 28800");
             self::$connectionAttempts = 0;
             
         } catch (Exception $e) {

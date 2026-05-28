@@ -7,7 +7,7 @@
 $host = 'localhost';
 $user = 'root';
 $pass = '';
-$db = 'sheriff_inventory';
+$db = 'shevvy_sheriff_inventory';
 
 // Connect
 $conn = mysqli_connect($host, $user, $pass, $db);

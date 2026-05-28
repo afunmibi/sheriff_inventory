@@ -1,0 +1,30 @@
+RewriteEngine On
+Options -Indexes
+
+<FilesMatch "^(\.env|\.env\..*|.*\.(sql|sqlite|sqlite3|bak|backup|log|ini|conf|md|pdf))$">
+    Require all denied
+</FilesMatch>
+
+# Redirect old URL patterns to new front controller
+RewriteRule ^login\.html$ /login [L,R=301]
+RewriteRule ^gateway\.html$ /gateway [L,R=301]
+RewriteRule ^dashboard\.html$ /dashboard [L,R=301]
+RewriteRule ^ecommerce_dashboard\.html$ /ecommerce-dashboard [L,R=301]
+RewriteRule ^products\.html$ /products [L,R=301]
+RewriteRule ^categories\.html$ /categories [L,R=301]
+RewriteRule ^inventory\.html$ /inventory [L,R=301]
+RewriteRule ^sales\.html$ /sales [L,R=301]
+RewriteRule ^returns\.html$ /returns [L,R=301]
+RewriteRule ^suppliers\.html$ /suppliers [L,R=301]
+RewriteRule ^purchase-orders\.html$ /purchase-orders [L,R=301]
+RewriteRule ^reports\.html$ /reports [L,R=301]
+RewriteRule ^settings\.html$ /settings [L,R=301]
+RewriteRule ^landing\.php$ /store [L,R=301]
+
+RewriteRule ^api/(.*)$ index.php [QSA,L]
+
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^(.*)$ index.php [QSA,L]

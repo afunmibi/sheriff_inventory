@@ -47,7 +47,7 @@ cp .env.example .env
 Edit `.env`:
 ```env
 DB_HOST=localhost
-DB_DATABASE=sheriff_inventory
+DB_DATABASE=shevvy_sheriff_inventory
 DB_USERNAME=root
 DB_PASSWORD=your_password
 ```
@@ -69,7 +69,7 @@ http://localhost:8080/login.html
 ## Project Structure
 
 ```
-sheriff_inventory/
+shevvy_sheriff_inventory/
 ├── app/
 │   ├── config/          # Database & Config
 │   ├── controllers/    # API Controllers

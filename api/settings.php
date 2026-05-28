@@ -40,7 +40,9 @@ try {
             'business_phone' => 'business_phone',
             'business_email' => 'business_email',
             'currency_symbol' => 'currency_symbol',
-            'tax_rate' => 'tax_rate'
+            'tax_rate' => 'tax_rate',
+            'whatsapp_number' => 'whatsapp_number',
+            'storefront_welcome' => 'storefront_welcome'
         ];
         
         $stmt = $conn->prepare("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) 

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="public/assets/css/style.css">
+    <style>
+        .customers-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+        }
+        .customers-header .search-box {
+            display: flex; gap: 8px; align-items: center;
+            background: var(--bg-card, #fff); padding: 4px 4px 4px 16px;
+            border-radius: 8px; border: 1px solid var(--border);
+        }
+        .customers-header .search-box input {
+            border: none; outline: none; padding: 8px 0;
+            font-size: 0.9rem; min-width: 220px;
+            background: transparent; color: var(--text-primary, inherit);
+        }
+        .customers-header .search-box input::placeholder {
+            color: var(--text-dim, #94a3b8);
+        }
+        .customers-header .search-box button {
+            padding: 8px 16px; border-radius: 6px;
+            background: var(--primary); color: white; border: none;
+            cursor: pointer; font-weight: 600; font-size: 0.85rem;
+        }
+        .stat-cards {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card, #fff); border-radius: 10px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+        }
+        .stat-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+        .stat-card .sub { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+        .customer-row { cursor: pointer; transition: background 0.15s; }
+        .customer-row:hover { background: rgba(255,255,255,0.04); }
+        .customer-row.active { background: rgba(59,130,246,0.12); }
+        .order-history { display: none; margin-top: 24px; }
+        .order-history.visible { display: block; }
+        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
+        .data-table thead th { background: rgba(0,0,0,0.03); color: var(--text-muted); font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+        .data-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text-primary); }
+        .data-table tbody tr { transition: background 0.15s; }
+        .data-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+        @media (max-width: 1024px) { .data-table { font-size: 0.7rem; } .data-table thead th, .data-table tbody td { padding: 7px 6px; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <h1 class="page-title">Customers</h1>
+                    <span id="customerCount" style="font-size:0.82rem;color:var(--text-muted);font-weight:400;"></span>
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="stat-cards">
+                    <div class="stat-card">
+                        <div class="label">Total Customers</div>
+                        <div class="value" id="statTotal">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Total Orders</div>
+                        <div class="value" id="statOrders">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Total Revenue</div>
+                        <div class="value" id="statRevenue">₦0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Avg. per Customer</div>
+                        <div class="value" id="statAvg">₦0</div>
+                    </div>
+                </div>
+
+                <div class="customers-header">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Search by name, phone or email..." onkeyup="if(event.key==='Enter')loadCustomers()">
+                        <button onclick="loadCustomers()">Search</button>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="loadCustomers()">🔄 Refresh</button>
+                    </div>
+                </div>
+
+                <div style="background:var(--bg-card,#fff);border-radius:10px;border:1px solid var(--border);overflow:hidden;">
+                    <table class="data-table" id="customersTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Orders</th>
+                                <th>Total Spent</th>
+                                <th>First Order</th>
+                                <th>Last Order</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersBody">
+                            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Loading customers...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="order-history" id="orderHistory">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="margin:0;font-size:1rem;">Orders for <span id="customerNameDisplay" style="color:var(--primary);"></span></h3>
+                        <button class="btn btn-sm btn-secondary" onclick="closeOrders()">✕ Close</button>
+                    </div>
+                <div style="background:var(--bg-card,#fff);border-radius:10px;border:1px solid var(--border);overflow:hidden;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script>
+    async function loadCustomers() {
+        const search = document.getElementById('searchInput').value.trim();
+        const url = search ? `api/customers.php?search=${encodeURIComponent(search)}` : 'api/customers.php';
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message);
+            renderCustomers(json.data);
+        } catch (err) {
+            document.getElementById('customersBody').innerHTML =
+                `<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444;">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    function renderCustomers(customers) {
+        const tbody = document.getElementById('customersBody');
+        const totalCustomers = customers.length;
+        let totalOrders = 0;
+        let totalRevenue = 0;
+
+        if (!customers.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No customers found.</td></tr>`;
+        } else {
+            tbody.innerHTML = customers.map(c => {
+                totalOrders += parseInt(c.total_orders) || 0;
+                totalRevenue += parseFloat(c.total_spent) || 0;
+                const name = c.customer_name || 'Unknown';
+                const phone = c.customer_phone || '-';
+                const email = c.customer_email || '-';
+                const orders = c.total_orders || 0;
+                const spent = Utils ? Utils.formatCurrency(c.total_spent) : '\u20A6' + Number(c.total_spent).toLocaleString();
+                const first = c.first_order_date || '-';
+                const last = c.last_order_date || '-';
+                return `<tr class="customer-row" onclick="showOrders('${phone.replace(/'/g, "\\'")}','${name.replace(/'/g, "\\'")}')">
+                    <td><strong>${name}</strong></td>
+                    <td>${phone}</td>
+                    <td style="font-size:0.82rem;color:var(--text-muted);">${email}</td>
+                    <td>${orders}</td>
+                    <td>${spent}</td>
+                    <td>${first}</td>
+                    <td>${last}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        document.getElementById('statTotal').textContent = totalCustomers;
+        document.getElementById('statOrders').textContent = totalOrders;
+        document.getElementById('statRevenue').textContent = Utils ? Utils.formatCurrency(totalRevenue) : '\u20A6' + totalRevenue.toLocaleString();
+        document.getElementById('statAvg').textContent = totalCustomers > 0
+            ? (Utils ? Utils.formatCurrency(totalRevenue / totalCustomers) : '\u20A6' + (totalRevenue / totalCustomers).toLocaleString())
+            : '\u20A60';
+        document.getElementById('customerCount').textContent = `(${totalCustomers} customers)`;
+    }
+
+    async function showOrders(phone, name) {
+        document.getElementById('customerNameDisplay').textContent = name;
+        document.getElementById('ordersBody').innerHTML =
+            `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading...</td></tr>`;
+        document.getElementById('orderHistory').classList.add('visible');
+
+        try {
+            const res = await fetch(`api/customers.php?phone=${encodeURIComponent(phone)}`);
+            const json = await res.json();
+            if (!json.success) throw new Error(json.message);
+            const orders = json.orders || [];
+            const tbody = document.getElementById('ordersBody');
+
+            if (!orders.length) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No orders found.</td></tr>`;
+            } else {
+                tbody.innerHTML = orders.map(o => {
+                    const total = (parseInt(o.quantity_sold) || 0) * (parseFloat(o.unit_price) || 0);
+                    return `<tr>
+                        <td>${o.invoice_number || '-'}</td>
+                        <td>${o.sale_date || '-'}</td>
+                        <td>${o.product_name || '-'}</td>
+                        <td>${o.quantity_sold || 0}</td>
+                        <td>${Utils ? Utils.formatCurrency(o.unit_price) : '\u20A6' + Number(o.unit_price).toLocaleString()}</td>
+                        <td>${Utils ? Utils.formatCurrency(total) : '\u20A6' + total.toLocaleString()}</td>
+                        <td>${o.payment_method || '-'}</td>
+                    </tr>`;
+                }).join('');
+            }
+        } catch (err) {
+            document.getElementById('ordersBody').innerHTML =
+                `<tr><td colspan="7" style="text-align:center;padding:20px;color:#ef4444;">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    function closeOrders() {
+        document.getElementById('orderHistory').classList.remove('visible');
+    }
+
+    loadCustomers();
+    </script>
+</body>
+</html>

@@ -16,11 +16,20 @@ require_once __DIR__ . '/../app/config/Config.php';
 require_once __DIR__ . '/../app/config/DatabaseConnection.php';
 
 Config::load();
+session_start();
+$role = strtolower($_SESSION['user']['role'] ?? '');
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 try {
     $conn = DatabaseConnection::getConnection();
+
+    // RESTRICTION: Only Managers/Admins can modify inventory manually
+    $isAuthorized = (in_array($role, ['admin', 'administrator', 'manager']));
+    if (in_array($method, ['POST', 'PUT'], true) && !$isAuthorized) {
+        echo json_encode(['success' => false, 'message' => "Unauthorized: Only Managers and Admins can adjust stock manually"]);
+        exit;
+    }
 
     if (in_array($method, ['POST', 'PUT'], true)) {
         $input = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -46,10 +55,28 @@ try {
 
         $reorderLevel = (int)($productRow['reorder_level'] ?? 10);
         
+        // Get current inventory details if exists
+        $invStmt = $conn->prepare("SELECT quantity_on_hand, quantity_reserved, warehouse_location FROM inventory WHERE product_id = ?");
+        $invStmt->bind_param('i', $productId);
+        $invStmt->execute();
+        $invRow = $invStmt->get_result()->fetch_assoc();
+        $invStmt->close();
+
+        $currentQty = (int)($invRow['quantity_on_hand'] ?? 0);
+        $currentReserved = (int)($invRow['quantity_reserved'] ?? 0);
+        $currentLocation = $invRow['warehouse_location'] ?? 'Main Store';
+
         // Data to update
-        $qtyOnHand = isset($input['quantity_on_hand']) ? (int)$input['quantity_on_hand'] : (isset($input['quantity']) ? (int)$input['quantity'] : 0);
-        $qtyReserved = isset($input['quantity_reserved']) ? (int)$input['quantity_reserved'] : 0;
-        $location = trim((string)($input['warehouse_location'] ?? 'Main Store'));
+        $addToStock = isset($input['add_to_stock']) ? (int)$input['add_to_stock'] : 0;
+        
+        if ($addToStock !== 0) {
+            $qtyOnHand = $currentQty + $addToStock;
+        } else {
+            $qtyOnHand = isset($input['quantity_on_hand']) ? (int)$input['quantity_on_hand'] : (isset($input['quantity']) ? (int)$input['quantity'] : $currentQty);
+        }
+        
+        $qtyReserved = isset($input['quantity_reserved']) ? (int)$input['quantity_reserved'] : $currentReserved;
+        $location = isset($input['warehouse_location']) ? trim((string)$input['warehouse_location']) : $currentLocation;
         $status = trim((string)($input['status'] ?? ''));
 
         if (empty($status)) {

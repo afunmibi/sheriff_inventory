@@ -11,7 +11,7 @@ class Config {
     public static function load(): void {
         if (self::$loaded) return;
 
-        $envFile = dirname(__DIR__) . '/.env';
+        $envFile = dirname(dirname(__DIR__)) . '/.env';
         
         if (file_exists($envFile)) {
             $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -35,7 +35,7 @@ class Config {
             'db' => [
                 'host' => getenv('DB_HOST') ?: 'localhost',
                 'port' => getenv('DB_PORT') ?: '3306',
-                'database' => getenv('DB_DATABASE') ?: 'sheriff_inventory',
+                'database' => getenv('DB_DATABASE') ?: 'shevvy_sheriff_inventory',
                 'username' => getenv('DB_USERNAME') ?: 'root',
                 'password' => getenv('DB_PASSWORD') ?: '',
                 'charset' => 'utf8mb4'

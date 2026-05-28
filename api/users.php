@@ -13,6 +13,17 @@ Config::load();
 $method = $_SERVER['REQUEST_METHOD'];
 $conn = DatabaseConnection::getConnection();
 
+// ROLE SECURITY: Only Admin can access this API for modifications
+session_start();
+$userProfile = $_SESSION['user'] ?? null;
+$role = isset($userProfile['role']) ? strtolower($userProfile['role']) : '';
+$isAdmin = (in_array($role, ['admin', 'administrator']));
+
+if ($method !== 'GET' && !$isAdmin) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized: Only Admin can manage users']);
+    exit;
+}
+
 try {
     if ($method === 'GET') {
         $id = isset($_GET['id']) ? (int)$_GET['id'] : null;

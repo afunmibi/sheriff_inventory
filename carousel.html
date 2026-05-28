@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hero Carousel - SHERIFF SHEVVY</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .slide-card {
+            display: flex; gap: 16px; align-items: center;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+        }
+        .slide-card .thumb {
+            width: 120px; height: 70px; border-radius: 6px; overflow: hidden; flex-shrink: 0;
+            background: #1e293b;
+        }
+        .slide-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .slide-card .info { flex: 1; min-width: 0; }
+        .slide-card .info .title { font-weight: 700; color: white; }
+        .slide-card .info .subtitle { font-size: 0.8rem; color: var(--gray-400); }
+        .slide-card .actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .slide-card .sort-input { width: 50px; text-align: center; }
+        .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .btn-edit { background: var(--primary); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+        .btn-toggle { background: var(--gray-600); color: white; }
+        .btn-toggle.active { background: var(--success); }
+
+        #slideFormModal .form-group { margin-bottom: 14px; }
+        #slideFormModal label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--gray-400); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        #slideFormModal input, #slideFormModal textarea { width: 100%; }
+        #slideFormModal .preview-box { width: 100%; height: 120px; background: #1e293b; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #slideFormModal .preview-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Hero Carousel</h1>
+                <button class="btn btn-primary" onclick="openSlideForm()">+ Add Slide</button>
+            </header>
+            <div class="content">
+                <div class="card">
+                    <div id="slidesList"></div>
+                    <p id="emptyMsg" class="text-muted" style="display:none; text-align:center; padding:40px;">No slides yet. Click "+ Add Slide" to create one.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Slide Form Modal -->
+    <div class="modal-overlay" id="slideFormModal">
+        <div class="modal-content" style="width:550px; flex-direction:column; padding:30px; max-height:90vh; overflow-y:auto;">
+            <button class="modal-close" onclick="closeSlideForm()">&times;</button>
+            <h2 id="slideFormTitle" style="margin-bottom:20px; color:white;">Add Slide</h2>
+            <form id="slideForm" onsubmit="return saveSlide(event)">
+                <input type="hidden" name="slide_id" id="slideId">
+                <div class="form-group">
+                    <label>Image</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="file" id="slideImageInput" accept="image/*" style="display:none;">
+                        <input type="text" name="image_url" id="slideImageUrl" class="form-control" placeholder="Or paste image URL" style="flex:1;">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('slideImageInput').click()">Browse</button>
+                    </div>
+                    <div class="preview-box" id="slidePreview" style="margin-top:8px;">
+                        <span class="text-muted">No image</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" id="slideTitle" class="form-control" placeholder="e.g. HP EliteBook 840 G5">
+                </div>
+                <div class="form-group">
+                    <label>Subtitle</label>
+                    <textarea name="subtitle" id="slideSubtitle" class="form-control" rows="2" placeholder="Brief description..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>CTA Text</label>
+                    <input type="text" name="cta_text" id="slideCtaText" class="form-control" placeholder="e.g. Shop Now">
+                </div>
+                <div class="form-group">
+                    <label>CTA Link</label>
+                    <input type="text" name="cta_link" id="slideCtaLink" class="form-control" placeholder="e.g. #products or /page">
+                </div>
+                <div class="form-group">
+                    <label>Sort Order</label>
+                    <input type="number" name="sort_order" id="slideSortOrder" class="form-control" value="0" min="0">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSlideForm()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Slide</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script>
+        let editingSlideId = null;
+        let pendingFile = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = Utils.storage.get('user');
+            if (!user) { window.location.href = 'login.php'; return; }
+            Utils.initSidebar();
+            loadSlides();
+
+            document.getElementById('slideImageInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                pendingFile = file;
+                // Show preview client-side
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('slidePreview').innerHTML = `<img src="${ev.target.result}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        function getApiUrl(file) {
+            return window.location.pathname.replace(/\/[^/]+$/, '/') + 'api/' + file;
+        }
+
+        async function loadSlides() {
+            try {
+                const res = await fetch(getApiUrl('hero_slides.php'));
+                const result = await res.json();
+                const list = document.getElementById('slidesList');
+                const empty = document.getElementById('emptyMsg');
+                if (result.success && result.data.length) {
+                    empty.style.display = 'none';
+                    list.innerHTML = result.data.map(s => `
+                        <div class="slide-card">
+                            <div class="thumb"><img src="${s.image_url}" alt=""></div>
+                            <div class="info">
+                                <div class="title">${s.title || 'Untitled'}</div>
+                                <div class="subtitle">${s.subtitle || ''} ${s.cta_text ? ' · [' + s.cta_text + ']' : ''}</div>
+                            </div>
+                            <input type="number" class="form-control sort-input" value="${s.sort_order}" onchange="updateSort(${s.slide_id}, this.value)" title="Sort order">
+                            <div class="actions">
+                                <button class="btn-icon btn-edit" onclick="editSlide(${s.slide_id})" title="Edit">✎</button>
+                                <button class="btn-icon ${s.is_active == 1 ? 'btn-toggle active' : 'btn-toggle'}" onclick="toggleSlide(${s.slide_id}, ${s.is_active})" title="Toggle active">${s.is_active == 1 ? '✓' : '✕'}</button>
+                                <button class="btn-icon btn-delete" onclick="deleteSlide(${s.slide_id})" title="Delete">🗑</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                }
+            } catch (e) { Utils.showError('Failed to load slides'); }
+        }
+
+        function openSlideForm(slide) {
+            editingSlideId = slide ? slide.slide_id : null;
+            document.getElementById('slideFormTitle').textContent = slide ? 'Edit Slide' : 'Add Slide';
+            document.getElementById('slideId').value = slide ? slide.slide_id : '';
+            document.getElementById('slideTitle').value = slide ? (slide.title || '') : '';
+            document.getElementById('slideSubtitle').value = slide ? (slide.subtitle || '') : '';
+            document.getElementById('slideImageUrl').value = slide ? (slide.image_url || '') : '';
+            document.getElementById('slideCtaText').value = slide ? (slide.cta_text || '') : '';
+            document.getElementById('slideCtaLink').value = slide ? (slide.cta_link || '') : '';
+            document.getElementById('slideSortOrder').value = slide ? (slide.sort_order || 0) : 0;
+            const preview = document.getElementById('slidePreview');
+            if (slide && slide.image_url) {
+                preview.innerHTML = `<img src="${slide.image_url}" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+            } else {
+                preview.innerHTML = '<span class="text-muted">No image</span>';
+            }
+            document.getElementById('slideFormModal').classList.add('show');
+        }
+
+        function closeSlideForm() {
+            document.getElementById('slideFormModal').classList.remove('show');
+            editingSlideId = null;
+        }
+
+        async function saveSlide(e) {
+            e.preventDefault();
+            const form = document.getElementById('slideForm');
+            const formData = new FormData(form);
+
+            if (pendingFile) {
+                formData.set('image', pendingFile);
+            }
+
+            let url, method;
+
+            if (editingSlideId) {
+                formData.append('_method', 'PUT');
+                formData.append('slide_id', editingSlideId);
+                url = getApiUrl('hero_slides.php');
+                method = 'POST';
+            } else {
+                url = getApiUrl('hero_slides.php');
+                method = 'POST';
+            }
+
+            try {
+                const res = await fetch(url, { method, body: formData });
+                const result = await res.json();
+                if (result.success) {
+                    Utils.showSuccess(editingSlideId ? 'Slide updated' : 'Slide created');
+                    pendingFile = null;
+                    closeSlideForm();
+                    loadSlides();
+                } else { throw new Error(result.message); }
+            } catch (e) { Utils.showError(e.message || 'Save failed'); }
+        }
+
+        function editSlide(id) {
+            fetch(getApiUrl('hero_slides.php'))
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        const slide = result.data.find(s => Number(s.slide_id) === Number(id));
+                        if (slide) openSlideForm(slide);
+                    }
+                });
+        }
+
+        async function deleteSlide(id) {
+            if (!confirm('Delete this slide?')) return;
+            try {
+                const res = await fetch(getApiUrl('hero_slides.php?id=' + id), { method: 'DELETE' });
+                const result = await res.json();
+                if (result.success) { Utils.showSuccess('Deleted'); loadSlides(); }
+                else { throw new Error(result.message); }
+            } catch (e) { Utils.showError(e.message || 'Delete failed'); }
+        }
+
+        async function toggleSlide(id, current) {
+            try {
+                const res = await fetch(getApiUrl('hero_slides.php?id=' + id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: current == 1 ? 0 : 1 })
+                });
+                const result = await res.json();
+                if (result.success) { loadSlides(); }
+                else { throw new Error(result.message); }
+            } catch (e) { Utils.showError(e.message || 'Toggle failed'); }
+        }
+
+        async function updateSort(id, order) {
+            try {
+                await fetch(getApiUrl('hero_slides.php?id=' + id), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sort_order: parseInt(order) || 0 })
+                });
+            } catch (e) {}
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', e => {
+            e.preventDefault();
+            Utils.storage.remove('user');
+            window.location.href = 'login.php';
+        });
+    </script>
+</body>
+</html>

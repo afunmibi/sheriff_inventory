@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Storefront Hub - SHERIFF SHEVVY</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      .store-theme {
+        --accent: #fbbf24;
+        --accent-dark: #d97706;
+        --bg-body: #f1f5f9;
+        --bg-card: #ffffff;
+        --sidebar-bg: #1e1b4b;
+        --border-subtle: #e2e8f0;
+        --text-primary: #0f172a;
+        --text-muted: #64748b;
+        --text-dim: #94a3b8;
+      }
+      .store-theme body { background: var(--bg-body); color: var(--text-primary); font-family: 'Outfit', sans-serif; }
+      .store-theme .sidebar { background: var(--sidebar-bg) !important; }
+      .store-theme .sidebar-logo { color: var(--accent); }
+      .store-theme .main-content { background: var(--bg-body); }
+      .store-theme .topbar { background: #fff; border-bottom: 1px solid var(--border-subtle); }
+      .store-theme .page-title { color: var(--accent-dark); }
+      .store-theme .card { background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+      .store-theme .card-header { border-bottom-color: var(--border-subtle); }
+      .store-theme .data-table th { background: #f8fafc; color: var(--text-muted); border-bottom-color: var(--border-subtle); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+      .store-theme .data-table td { border-bottom-color: var(--border-subtle); color: var(--text-primary); }
+      .store-theme .data-table tr:hover { background: #f8fafc; }
+
+      .dash-content { padding: 28px 32px; }
+
+      .dash-banner {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+        border-radius: 20px; padding: 36px 40px; margin-bottom: 28px;
+        color: #fff; position: relative; overflow: hidden;
+        box-shadow: 0 8px 25px rgba(30, 27, 75, 0.15);
+      }
+      .dash-banner::after {
+        content: ''; position: absolute; top: -30%; right: -8%;
+        width: 300px; height: 300px;
+        background: radial-gradient(circle, rgba(251, 191, 36, 0.08) 0%, transparent 70%);
+        border-radius: 50%; pointer-events: none;
+      }
+      .dash-banner > * { position: relative; z-index: 1; }
+      .dash-banner .banner-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+      .dash-banner h2 { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.02em; margin: 0 0 4px; color: #fff; }
+      .dash-banner p { opacity: 0.75; font-size: 0.9rem; margin: 0; }
+      .banner-cta {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: var(--accent); color: #1e1b4b; padding: 12px 28px;
+        border-radius: 12px; font-weight: 800; font-size: 0.9rem;
+        text-decoration: none; transition: all 0.2s;
+        box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+      }
+      .banner-cta:hover { background: #fcd34d; transform: translateY(-2px); box-shadow: 0 12px 25px rgba(251, 191, 36, 0.4); }
+
+      .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+      .qa-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 9px 18px; border-radius: 10px;
+        border: 1px solid var(--border-subtle);
+        background: #fff; color: var(--text-primary);
+        font-size: 0.82rem; font-weight: 600; cursor: pointer;
+        transition: all 0.2s; text-decoration: none; white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      }
+      .qa-btn:hover { background: #fefce8; border-color: var(--accent); color: var(--accent-dark); transform: translateY(-1px); }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px; margin-bottom: 28px;
+      }
+      .kpi-card {
+        background: #fff; border: 1px solid var(--border-subtle);
+        border-radius: 14px; padding: 18px 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      }
+      .kpi-card .kpi-icon { font-size: 1.3rem; margin-bottom: 10px; }
+      .kpi-card .kpi-label { font-size: 0.73rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+      .kpi-card .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); line-height: 1.2; margin-top: 2px; }
+      .kpi-card .kpi-sub { font-size: 0.7rem; color: var(--text-dim); margin-top: 3px; }
+      @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 500px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+      .cols-2 { display: grid; grid-template-columns: 1.7fr 1fr; gap: 24px; align-items: start; }
+      @media (max-width: 900px) { .cols-2 { grid-template-columns: 1fr; } }
+
+      .badge-dot {
+        display: inline-block; padding: 2px 10px; border-radius: 10px;
+        font-size: 0.65rem; font-weight: 600; white-space: nowrap;
+      }
+      .badge-dot.pending { background: rgba(245,158,11,0.12); color: #d97706; }
+      .badge-dot.completed { background: rgba(16,185,129,0.12); color: #059669; }
+      .badge-dot.cancelled { background: rgba(239,68,68,0.12); color: #dc2626; }
+
+      .status-ring { display: flex; gap: 20px; flex-wrap: wrap; }
+      .status-item { text-align: center; flex: 1; min-width: 60px; }
+      .status-item .s-count { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+      .status-item .s-label { font-size: 0.68rem; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+      .empty-state { text-align: center; padding: 28px; color: var(--text-dim); font-size: 0.85rem; }
+    </style>
+  </head>
+  <body class="store-theme">
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="sidebar-header"><div class="sidebar-logo">STORE HUB</div></div>
+        <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div class="topbar-left" style="display:flex;align-items:center;gap:16px;">
+            <h1 class="page-title" style="margin:0;">Ecommerce Management</h1>
+          </div>
+          <div class="topbar-right">
+            <button id="headerLogoutBtn" class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fee2e2;">🚪 Sign Out</button>
+          </div>
+        </header>
+
+        <div class="dash-content">
+          <div class="dash-banner">
+            <div class="banner-row">
+              <div>
+                <h2>Your Online Storefront</h2>
+                <p>Manage orders, product visibility, and customer settings.</p>
+              </div>
+              <a href="products.html?hub=store&action=new" class="banner-cta">+ List New Product</a>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <a href="products.html?hub=store" class="qa-btn">✨ Web Products</a>
+            <a href="products.html?hub=store&action=new" class="qa-btn">➕ Add Product</a>
+            <a href="sales.html?hub=store" class="qa-btn">🛒 Web Orders</a>
+            <a href="/" target="_blank" class="qa-btn">🌐 View Storefront</a>
+            <a href="settings.html?hub=store" class="qa-btn">⚙️ Front Settings</a>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon">📦</div>
+              <div class="kpi-label">Active Products</div>
+              <div class="kpi-value" id="kpiProducts">0</div>
+              <div class="kpi-sub">Listed on storefront</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon">⏳</div>
+              <div class="kpi-label">Pending Orders</div>
+              <div class="kpi-value" id="kpiPending">0</div>
+              <div class="kpi-sub">Awaiting payment</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon">🛒</div>
+              <div class="kpi-label">Today's Revenue</div>
+              <div class="kpi-value" id="kpiToday" style="font-size:1.2rem;">₦0.00</div>
+              <div class="kpi-sub" id="kpiTodayCount">0 orders today</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-icon">📊</div>
+              <div class="kpi-label">All Time Orders</div>
+              <div class="kpi-value" id="kpiTotal">0</div>
+              <div class="kpi-sub">Total web conversions</div>
+            </div>
+          </div>
+
+          <div class="cols-2">
+            <div>
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🕐 Recent Web Orders</h3>
+                  <a href="sales.html?hub=store" style="font-size:0.8rem;color:var(--accent-dark);">View All →</a>
+                </div>
+                <table class="data-table">
+                  <thead><tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+                  <tbody id="ordersBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div class="card" style="margin-bottom:24px;">
+                <div class="card-header">
+                  <h3 class="card-title">📊 Order Status</h3>
+                </div>
+                <div class="status-ring" id="statusRing">
+                  <div class="empty-state">No data</div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📋 Quick Info</h3>
+                </div>
+                <div style="font-size:0.85rem;color:var(--text-muted);line-height:2;">
+                  <div><strong style="color:var(--text-primary);">Storefront:</strong> <a href="/" target="_blank" style="color:var(--accent-dark);">shevvy.shop →</a></div>
+                  <div><strong style="color:var(--text-primary);">Payment:</strong> Pay on Delivery</div>
+                  <div><strong style="color:var(--text-primary);">Orders source:</strong> Web</div>
+                  <div><strong style="color:var(--text-primary);">Products:</strong> <span id="infoProducts">0</span> active</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="js/core/utils.js"></script>
+    <script src="js/services/apiClient.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const user = Utils.storage.get('user');
+        if (!user) { window.location.href = 'login.php'; return; }
+
+        const role = (user.role || '').toLowerCase();
+        const allowed = ['admin', 'manager'];
+        if (!allowed.includes(role)) { window.location.href = 'gateway.html'; return; }
+
+        Utils.initSidebar();
+        loadEcomDashboard();
+
+        document.getElementById('headerLogoutBtn').onclick = (e) => {
+          e.preventDefault();
+          if(confirm('Sign out?')) {
+            Utils.storage.remove('user');
+            Utils.storage.remove('token');
+            window.location.href = 'login.php';
+          }
+        };
+      });
+
+      async function loadEcomDashboard() {
+        try {
+          const [ordersRes, prodRes] = await Promise.all([
+            fetch('api/web_order.php'),
+            fetch('api/products.php')
+          ]);
+          const ordersData = await ordersRes.json();
+          const prodData = await prodRes.json();
+
+          const orders = ordersData.success ? (ordersData.data || []) : [];
+          const products = prodData.success ? (prodData.data || prodData.products || []) : [];
+
+          document.getElementById('kpiProducts').textContent = products.length;
+          document.getElementById('infoProducts').textContent = products.length;
+
+          const pending = orders.filter(o => (o.payment_status || '').toLowerCase() === 'pending');
+          const completed = orders.filter(o => (o.payment_status || '').toLowerCase() === 'completed');
+          const cancelled = orders.filter(o => (o.payment_status || '').toLowerCase() === 'cancelled');
+          const today = new Date().toISOString().split('T')[0];
+          const todayOrders = orders.filter(o => (o.sale_date || '').startsWith(today));
+          const todayRev = todayOrders.reduce((s, o) => s + Number(o.unit_price || o.total_amount || 0), 0);
+
+          document.getElementById('kpiPending').textContent = pending.length;
+          document.getElementById('kpiToday').textContent = Utils.formatCurrency(todayRev);
+          document.getElementById('kpiTodayCount').textContent = todayOrders.length + ' order' + (todayOrders.length !== 1 ? 's' : '') + ' today';
+          document.getElementById('kpiTotal').textContent = orders.length;
+
+          document.getElementById('statusRing').innerHTML = [
+            { label: 'Pending', count: pending.length, color: '#d97706' },
+            { label: 'Completed', count: completed.length, color: '#059669' },
+            { label: 'Cancelled', count: cancelled.length, color: '#dc2626' },
+            { label: 'Total', count: orders.length, color: '#4f46e5' },
+          ].map(s => `<div class="status-item"><div class="s-count" style="color:${s.color};">${s.count}</div><div class="s-label">${s.label}</div></div>`).join('');
+
+          const recent = orders.slice(0, 10);
+          document.getElementById('ordersBody').innerHTML = recent.length
+            ? recent.map(o => {
+                const status = (o.payment_status || 'pending').toLowerCase();
+                const amt = Number(o.unit_price || o.total_amount || 0);
+                const date = (o.sale_date || '').split(' ')[0];
+                return `<tr>
+                  <td><code style="font-size:0.75rem;">${o.invoice_number || '—'}</code></td>
+                  <td><span style="font-weight:600;">${o.customer_name || o.customer_phone || 'Walk-in'}</span><br><span style="font-size:0.7rem;color:var(--text-dim);">${o.customer_phone || ''}</span></td>
+                  <td><strong>${Utils.formatCurrency(amt)}</strong></td>
+                  <td><span class="badge-dot ${status}">${status}</span></td>
+                  <td style="font-size:0.78rem;color:var(--text-dim);">${date || '—'}</td>
+                </tr>`;
+              }).join('')
+            : '<tr><td colspan="5" class="empty-state">🌐 Waiting for your first web order</td></tr>';
+        } catch (e) {
+          console.error(e);
+          document.getElementById('ordersBody').innerHTML = '<tr><td colspan="5" class="empty-state">⚠️ Failed to load data</td></tr>';
+        }
+      }
+    </script>
+  </body>
+</html>

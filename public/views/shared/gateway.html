@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sheriff Shevvy - Management Gateway</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        font-family: 'Outfit', sans-serif;
+        background: #020617;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        padding: 16px 20px;
+        position: relative;
+      }
+      @keyframes orbFloat {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(40px, -30px) scale(1.1); }
+      }
+      .gateway { position: relative; z-index: 1; width: 100%; max-width: 1120px; text-align: center; }
+
+      .header {
+        margin-bottom: 24px;
+        opacity: 0;
+        transform: translateY(24px);
+        animation: fadeUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .header .logo-mark {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 52px; height: 52px;
+        background: #fbbf24;
+        border-radius: 16px; margin-bottom: 14px;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .header .logo-mark:hover { transform: rotate(12deg) scale(1.05); }
+      .header .logo-mark svg { width: 26px; height: 26px; }
+      .header h1 {
+        font-size: 2rem; font-weight: 900; letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 8px;
+      }
+      .header h1 .grad {
+        color: #fbbf24;
+      }
+      .header p { font-size: 0.95rem; color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.6; }
+      .header .greeting {
+        color: #94a3b8; font-weight: 600; font-size: 0.82rem; letter-spacing: 1px;
+        text-transform: uppercase; margin-bottom: 6px; display: block;
+      }
+
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+      .card {
+        background: linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 18px; padding: 24px 26px 22px;
+        text-decoration: none; color: #fff;
+        backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        display: flex; flex-direction: column; align-items: center;
+        position: relative; overflow: hidden;
+        opacity: 0; transform: translateY(32px);
+      }
+      .card::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(160deg, transparent 60%, rgba(251,191,36,0.02));
+        pointer-events: none;
+      }
+      .card::after {
+        content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+        background: conic-gradient(from 0deg at 50% 50%, transparent, rgba(251,191,36,0.03), transparent 30%, transparent);
+        animation: cardGlow 8s linear infinite; opacity: 0; transition: opacity 0.6s; pointer-events: none;
+      }
+      .card:hover::after { opacity: 1; }
+      @keyframes cardGlow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      .card:nth-child(1) { animation: fadeUp 0.9s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .card:nth-child(2) { animation: fadeUp 0.9s 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .card:hover {
+        transform: translateY(-5px) scale(1.01);
+        border-color: rgba(251,191,36,0.3);
+        background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02));
+        box-shadow: 0 40px 90px -20px rgba(0,0,0,0.6), 0 0 50px rgba(251,191,36,0.06);
+      }
+
+      .card-icon {
+        width: 56px; height: 56px;
+        background: linear-gradient(135deg, rgba(251,191,36,0.10), rgba(251,191,36,0.02));
+        border: 1px solid rgba(251,191,36,0.12); border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 12px;
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        flex-shrink: 0;
+      }
+      .card-icon svg { width: 26px; height: 26px; transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+      .card-icon svg .stroke-gold { stroke: #fbbf24; transition: stroke 0.5s; }
+      .card-icon svg .fill-gold { fill: #fbbf24; transition: fill 0.5s; }
+      .card:hover .card-icon {
+        background: linear-gradient(135deg, #fbbf24, #d97706); border-color: #fbbf24;
+        transform: rotate(6deg) scale(1.08); box-shadow: 0 12px 36px rgba(251,191,36,0.25);
+      }
+      .card:hover .card-icon svg { transform: rotate(-6deg) scale(1.05); }
+      .card:hover .card-icon svg .stroke-gold { stroke: #020617; }
+      .card:hover .card-icon svg .fill-gold { fill: #020617; }
+
+      .card-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.2px; }
+      .card-desc { color: #64748b; font-size: 0.78rem; line-height: 1.5; max-width: 280px; transition: color 0.4s; }
+      .card:hover .card-desc { color: #cbd5e1; }
+
+      .card-badge {
+        display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+        padding: 7px 22px; border-radius: 11px;
+        background: rgba(251,191,36,0.08); color: #fbbf24;
+        font-weight: 700; font-size: 0.78rem; letter-spacing: 1.2px; text-transform: uppercase;
+        border: 1px solid rgba(251,191,36,0.15);
+        transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .card-badge svg { width: 15px; height: 15px; transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+      .card:hover .card-badge {
+        background: #fbbf24; color: #020617; border-color: #fbbf24;
+        box-shadow: 0 8px 24px rgba(251,191,36,0.3); transform: translateY(-2px);
+      }
+      .card:hover .card-badge svg { transform: translateX(4px); }
+      .card:hover .card-badge svg line, .card:hover .card-badge svg polyline { stroke: #020617; }
+
+      .stats { display: flex; justify-content: center; gap: 42px; margin-top: 24px; opacity: 0; animation: fadeUp 0.9s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .stat-item { text-align: center; }
+      .stat-value { font-size: 1.35rem; font-weight: 800; color: #fbbf24; line-height: 1; margin-bottom: 3px; }
+      .stat-label { font-size: 0.72rem; color: #475569; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+      .footer { margin-top: 24px; opacity: 0; animation: fadeUp 0.9s 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      .footer a {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: #475569; text-decoration: none; font-weight: 600; font-size: 0.78rem;
+        letter-spacing: 1.5px; text-transform: uppercase;
+        padding: 7px 18px; border-radius: 9px; transition: all 0.3s;
+      }
+      .footer a:hover { color: #ef4444; background: rgba(239,68,68,0.06); }
+      .footer a svg { width: 13px; height: 13px; transition: transform 0.3s; }
+      .footer a:hover svg { transform: translateX(3px); }
+
+      @keyframes fadeUp { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: translateY(0); } }
+
+      @media (max-width: 850px) {
+        .grid { grid-template-columns: 1fr; gap: 16px; }
+        .header h1 { font-size: 1.6rem; }
+        body { padding: 20px 14px; height: auto; min-height: 100dvh; overflow: auto; }
+        .card { padding: 18px 18px 16px; }
+        .header { margin-bottom: 18px; }
+        .stats { gap: 28px; flex-wrap: wrap; }
+        .stat-value { font-size: 1.2rem; }
+        .orb-1, .orb-2 { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="gateway">
+      <div class="header">
+        <div class="logo-mark">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="28" height="28" rx="6" stroke="#020617" stroke-width="2.5"/>
+            <path d="M10 16L14 20L22 12" stroke="#020617" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="greeting auth-show" id="greetingText">Welcome back</span>
+        <span class="greeting guest-show" id="guestGreeting" style="display:none;">Welcome</span>
+        <h1><span class="grad" id="welcomeText">Sheriff Shevvy Systems</span></h1>
+        <p class="auth-show">Select a management portal to continue</p>
+        <p class="guest-show" style="display:none;">Sign in to access management portals</p>
+      </div>
+
+      <div class="guest-show" style="display:none;max-width:380px;margin:0 auto;">
+        <a href="login.php" class="card" style="display:flex;flex-direction:column;align-items:center;padding:28px 28px 24px;text-decoration:none;color:#fff;">
+          <div style="width:60px;height:60px;background:linear-gradient(135deg,rgba(251,191,36,0.10),rgba(251,191,36,0.02));border:1px solid rgba(251,191,36,0.12);border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;transition:all 0.5s;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div style="font-size:1.1rem;font-weight:800;margin-bottom:6px;letter-spacing:-0.2px;">Sign In Required</div>
+          <p style="color:#64748b;font-size:0.78rem;line-height:1.5;margin-bottom:0;">Authenticate to access inventory management, sales tracking, and business reporting.</p>
+          <div style="display:inline-flex;align-items:center;gap:5px;margin-top:16px;padding:7px 24px;border-radius:10px;background:rgba(251,191,36,0.08);color:#fbbf24;font-weight:700;font-size:0.7rem;letter-spacing:1.2px;text-transform:uppercase;border:1px solid rgba(251,191,36,0.15);">
+            Go to Login
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/><polyline points="14 7 19 12 14 17" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </a>
+      </div>
+
+      <div class="grid auth-show">
+        <a href="ecommerce_dashboard.html" class="card">
+          <div class="card-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="4" width="28" height="24" rx="4" class="stroke-gold" stroke-width="2"/>
+              <path d="M8 16H24" class="stroke-gold" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 20H20" class="stroke-gold" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="10" cy="26" r="2" class="fill-gold"/>
+              <circle cx="22" cy="26" r="2" class="fill-gold"/>
+              <path d="M6 10H26L24 16H8L6 10Z" class="fill-gold" opacity="0.15"/>
+            </svg>
+          </div>
+          <div class="card-title">Digital Storefront</div>
+          <p class="card-desc">Control your public ecommerce presence, manage web orders, and optimise product visibility.</p>
+          <div class="card-badge">Enter Hub <svg viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/><polyline points="14 7 19 12 14 17" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </a>
+        <a href="dashboard.html" class="card">
+          <div class="card-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="14" width="12" height="14" rx="2" class="stroke-gold" stroke-width="2"/>
+              <rect x="18" y="6" width="12" height="22" rx="2" class="stroke-gold" stroke-width="2"/>
+              <path d="M10 2L6 8H14L10 2Z" class="fill-gold" opacity="0.3"/>
+              <rect x="13" y="14" width="1" height="14" class="fill-gold" opacity="0.2"/>
+              <rect x="7" y="19" width="2" height="4" rx="0.5" class="fill-gold"/>
+              <rect x="23" y="11" width="2" height="12" rx="0.5" class="fill-gold"/>
+            </svg>
+          </div>
+          <div class="card-title">Operations Hub</div>
+          <p class="card-desc">Advanced inventory tracking, multi-channel POS sales, and comprehensive business reporting.</p>
+          <div class="card-badge">Enter Hub <svg viewBox="0 0 24 24" fill="none"><line x1="5" y1="12" x2="19" y2="12" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/><polyline points="14 7 19 12 14 17" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </a>
+      </div>
+
+      <div class="stats auth-show">
+        <div class="stat-item"><div class="stat-value" id="statProducts">&mdash;</div><div class="stat-label">Products</div></div>
+        <div class="stat-item"><div class="stat-value" id="statOrders">&mdash;</div><div class="stat-label">Orders</div></div>
+        <div class="stat-item"><div class="stat-value" id="statInventory">&mdash;</div><div class="stat-label">Stock Value</div></div>
+      </div>
+
+      <div class="footer auth-show">
+        <a href="login.php" id="logoutBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Sign Out</a>
+      </div>
+    </div>
+
+    <script src="assets/js/core/utils.js"></script>
+    <script src="assets/js/services/apiClient.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        const user = Utils.storage.get("user");
+        const isLoggedIn = !!user;
+        if (!isLoggedIn) { window.location.href = 'login.php'; return; }
+
+        document.querySelectorAll('.auth-show').forEach(el => el.style.display = '');
+        document.querySelectorAll('.guest-show').forEach(el => el.style.display = 'none');
+
+        const greetingEl = document.getElementById('greetingText');
+        const welcomeEl = document.getElementById('welcomeText');
+        const hr = new Date().getHours();
+        const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+        greetingEl.textContent = `${greet}, ${user.name || 'Admin'}`;
+        welcomeEl.textContent = `Sheriff Shevvy Systems`;
+        document.getElementById("logoutBtn").addEventListener("click", (e) => {
+          e.preventDefault();
+          new AuthService().logout().then(() => window.location.href = "login.php");
+        });
+        try {
+          const [prodRes, orderRes] = await Promise.all([
+            Utils.api.get('/api/products.php'),
+            Utils.api.get('/api/web_order.php')
+          ]);
+          const products = prodRes?.data?.data || [];
+          const orders = orderRes?.data?.data || [];
+          document.getElementById('statProducts').textContent = products.length;
+          document.getElementById('statOrders').textContent = orders.length;
+          const stockVal = products.reduce((sum, p) => sum + (parseFloat(p.selling_price || 0) * parseInt(p.quantity_on_hand || 0)), 0);
+          document.getElementById('statInventory').textContent =
+            '₦' + (stockVal >= 1e6 ? (stockVal / 1e6).toFixed(1) + 'M' : stockVal >= 1e3 ? (stockVal / 1e3).toFixed(0) + 'K' : stockVal.toFixed(0));
+        } catch (_) {}
+      });
+    </script>
+  </body>
+</html>

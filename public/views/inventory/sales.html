@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales - SHERIFF SHEVVY ENTERPRISES</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+      .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
+      .data-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+      .data-table tbody td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+      .data-table tbody tr { transition: background 0.15s; }
+      .data-table tbody tr:hover { background: #f8fafc; }
+      .data-table tbody tr.unpaid-row { background: #fef2f2; }
+      .data-table tbody tr.unpaid-row:hover { background: #fee2e2; }
+      .data-table code { font-size: 0.72rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #1e293b; font-weight: 600; }
+      .data-table .badge { padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; display: inline-block; }
+      .data-table .badge-success { background: #dcfce7; color: #166534; }
+      .data-table .badge-danger { background: #fee2e2; color: #991b1b; }
+      .data-table .badge-warning { background: #fef3c7; color: #92400e; }
+      .data-table tr.returned-row { opacity: 0.5; }
+      .data-table .btn-sm { padding: 4px 8px; font-size: 0.7rem; border-radius: 6px; border: 1px solid transparent; cursor: pointer; transition: all 0.15s; line-height: 1; }
+      .data-table .btn-sm:hover { filter: brightness(0.95); transform: translateY(-1px); }
+      .data-table .text-muted { color: #94a3b8; }
+      @media (max-width: 1024px) { .data-table { font-size: 0.7rem; } .data-table thead th, .data-table tbody td { padding: 7px 6px; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header"><div class="sidebar-logo">SHERIFF SHEVVY ENTERPRISES</div></div>
+            <nav class="sidebar-nav" id="dynamicSidebar"></nav>
+            <div class="sidebar-footer"><a href="login.php" class="nav-item" id="logoutBtn"><span>🚪</span> Logout</a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1 class="page-title">Sales History</h1>
+                <button class="btn btn-primary" id="addSaleBtn">+ Record New Sale</button>
+            </header>
+
+            <div class="content">
+                <div class="card mb-6">
+                    <div class="flex gap-4 items-center">
+                        <input type="text" id="salesSearchInput" class="form-control" placeholder="Search Invoice, Product, SN or VIN..." style="max-width: 400px;">
+                        <input type="date" id="dateFilter" class="form-control" style="max-width: 200px;">
+                        <select id="statusFilter" class="form-control form-select" style="max-width: 200px;">
+                            <option value="">All Statuses</option>
+                            <option value="completed">Paid</option>
+                            <option value="pending">Unpaid (Debt)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="data-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Invoice#</th><th>Date/Time</th><th>Product</th><th>Qty</th><th>Total</th><th>Payment</th><th>Customer/Identity</th><th>Notes</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="salesBody">
+                                <tr><td colspan="9" class="empty-state">Loading transactions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Sale Modal -->
+    <div class="modal-wrapper" id="saleModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Transaction</h3>
+                <button class="modal-close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="saleForm">
+                    <div class="form-group mb-4">
+                        <label class="form-label">Search Product *</label>
+                        <div style="position: relative;">
+                            <input type="text" class="form-control" id="productSearchInput" placeholder="Type name or SKU..." autocomplete="off">
+                            <input type="hidden" name="product_id" id="product_id_hidden">
+                            <div id="productSearchResults" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; z-index: 1000; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 0.6fr 1fr 1fr 1fr 1.2fr 1.2fr; gap: 10px; margin-bottom: 15px;">
+                        <div class="form-group">
+                            <label class="form-label">Qty *</label>
+                            <input type="number" class="form-control" name="quantity_sold" min="1" value="1" required id="qtyInput">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Price (₦)</label>
+                            <input type="number" class="form-control" name="unit_price" step="0.01" id="priceInput">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account</label>
+                            <select class="form-control form-select" name="payment_method">
+                                <option value="cash">Cash</option>
+                                <option value="opay">Opay</option>
+                                <option value="access">Access Bank</option>
+                                <option value="moniepoint">Moniepoint</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-control form-select" name="payment_status" id="paymentStatusSelect">
+                                <option value="completed">Paid</option>
+                                <option value="pending" style="color: #ef4444; font-weight: bold;">Unpaid (Debt)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">S/N (Optional)</label>
+                            <input type="text" class="form-control" name="serial_number" id="snInput" placeholder="Serial Number">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">VIN (Optional)</label>
+                            <input type="text" class="form-control" name="vin" id="vinInput" placeholder="VIN">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px; text-align: right;">
+                        <button type="button" class="btn btn-primary" id="addItemBtn" style="background: var(--info); border-color: var(--info);">+ Add to List</button>
+                    </div>
+
+                    <div id="cartContainer" style="margin-bottom: 20px; display: none;">
+                        <h4 style="margin-bottom: 10px; font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Items in Transaction</h4>
+                        <table class="data-table" style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Item</th><th>Qty</th><th>Price</th><th>Total</th><th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="grid grid-2 mb-4">
+                        <div class="form-group"><label class="form-label">Customer Name</label><input type="text" class="form-control" name="customer_name" placeholder="Name"></div>
+                        <div class="form-group"><label class="form-label">WhatsApp #</label><input type="tel" class="form-control" name="customer_phone" placeholder="Phone"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Technician Note / Details</label>
+                        <input type="text" class="form-control" name="notes" placeholder="e.g. Taken by Tech Mike, will pay Tuesday">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="flex-wrap: wrap;">
+                <div style="width: 100%; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-muted">Grand Total: </span>
+                    <strong id="modalTotal" class="text-xl" style="color: var(--primary);">₦0.00</strong>
+                </div>
+                <div class="flex gap-2" style="width: 100%; justify-content: flex-end;">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button class="btn btn-info" id="saveOnlyBtn">Submit Only</button>
+                    <button class="btn btn-success" id="saveAndShareBtn">Complete & WhatsApp</button>
+                    <button class="btn btn-primary" id="saveSaleBtn">Complete & Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../assets/js/core/utils.js"></script>
+    <script src="../assets/js/services/apiClient.js"></script>
+    <script>
+        let sales = [];
+        let products = [];
+        let currentCart = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = Utils.storage.get('user');
+            if (!user) { window.location.href = 'login.php'; return; }
+            
+            if (!user) { window.location.href = 'login.php'; return; }
+
+            loadSales();
+            loadProducts();
+
+            const addBtn = document.getElementById('addSaleBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const form = document.getElementById('saleForm');
+                    if (form) form.reset();
+                    const hiddenId = document.getElementById('product_id_hidden');
+                    const searchInput = document.getElementById('productSearchInput');
+                    if (hiddenId) hiddenId.value = '';
+                    if (searchInput) searchInput.value = '';
+                    selectedProduct = null;
+                    currentCart = [];
+                    renderCart();
+                    updateModalTotal();
+                    const modal = document.getElementById('saleModal');
+                    if (modal) modal.classList.add('show');
+                });
+            }
+
+            document.querySelectorAll('[data-dismiss="modal"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modal = document.getElementById('saleModal');
+                    if (modal) modal.classList.remove('show');
+                });
+            });
+
+            const qtyInput = document.getElementById('qtyInput');
+            if (qtyInput) qtyInput.addEventListener('input', updateModalTotal);
+            
+            const addItemBtn = document.getElementById('addItemBtn');
+            if (addItemBtn) {
+                addItemBtn.addEventListener('click', addToCart);
+            }
+
+            const onlyBtn = document.getElementById('saveOnlyBtn');
+            const saveBtn = document.getElementById('saveSaleBtn');
+            const shareBtn = document.getElementById('saveAndShareBtn');
+            
+            if (onlyBtn) onlyBtn.addEventListener('click', () => saveSale('none'));
+            if (saveBtn) saveBtn.addEventListener('click', () => saveSale('print'));
+            if (shareBtn) shareBtn.addEventListener('click', () => saveSale('share'));
+            
+            const logout = document.getElementById('logoutBtn');
+            if (logout) {
+                logout.addEventListener('click', e => {
+                    e.preventDefault();
+                    Utils.storage.remove('user');
+                    Utils.storage.remove('token');
+                    window.location.href = 'login.php';
+                });
+            }
+
+            const searchInput = document.getElementById('salesSearchInput');
+            const dateFilter = document.getElementById('dateFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            if (searchInput) searchInput.addEventListener('input', applyFilters);
+            if (dateFilter) dateFilter.addEventListener('change', applyFilters);
+            if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+        });
+
+        function addToCart() {
+            if (!selectedProduct) { alert('Please select a product first'); return; }
+            const qty = parseInt(document.getElementById('qtyInput').value) || 1;
+            const price = parseFloat(document.getElementById('priceInput').value) || 0;
+            const sn = document.getElementById('snInput').value;
+            const vin = document.getElementById('vinInput').value;
+
+            const item = {
+                product_id: selectedProduct.product_id,
+                product_name: selectedProduct.product_name,
+                quantity_sold: qty,
+                unit_price: price,
+                serial_number: sn,
+                vin: vin
+            };
+
+            currentCart.push(item);
+            
+            // Reset product selection for next item
+            document.getElementById('productSearchInput').value = '';
+            document.getElementById('product_id_hidden').value = '';
+            document.getElementById('qtyInput').value = 1;
+            document.getElementById('snInput').value = '';
+            document.getElementById('vinInput').value = '';
+            selectedProduct = null;
+
+            renderCart();
+            updateModalTotal();
+        }
+
+        function removeFromCart(index) {
+            currentCart.splice(index, 1);
+            renderCart();
+            updateModalTotal();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartContainer');
+            const tbody = document.getElementById('cartBody');
+            
+            if (currentCart.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            tbody.innerHTML = currentCart.map((item, index) => `
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">${item.product_name}</div>
+                        ${item.serial_number ? `<small class="text-muted">S/N: ${item.serial_number}</small>` : ''}
+                        ${item.vin ? `<br><small class="text-muted">VIN: ${item.vin}</small>` : ''}
+                    </td>
+                    <td>${item.quantity_sold}</td>
+                    <td>${Utils.formatCurrency(item.unit_price)}</td>
+                    <td><strong>${Utils.formatCurrency(item.quantity_sold * item.unit_price)}</strong></td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">&times;</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('salesSearchInput').value.toLowerCase();
+            const date = document.getElementById('dateFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const hub = Utils.getHubContext();
+
+            const filtered = sales.filter(s => {
+                if (s.payment_status === 'returned') return false; 
+                
+                // Hub Source Filter
+                if (hub === 'store' && s.source !== 'web') return false;
+                if (hub === 'ops' && s.source === 'web') return false;
+
+                const matchesQuery = 
+                    s.invoice_number.toLowerCase().includes(query) || 
+                    s.product_name.toLowerCase().includes(query) ||
+                    (s.serial_number && s.serial_number.toLowerCase().includes(query)) ||
+                    (s.vin && s.vin.toLowerCase().includes(query)) ||
+                    (s.customer_name && s.customer_name.toLowerCase().includes(query));
+                const matchesDate = !date || s.sale_date === date;
+                const matchesStatus = !status || s.payment_status === status;
+                return matchesQuery && matchesDate && matchesStatus;
+            });
+            renderSales(filtered);
+        }
+
+        async function loadSales() {
+            const hub = Utils.getHubContext();
+            
+            // Adapt UI based on Hub
+            if (hub === 'store') {
+                document.querySelector('.page-title').textContent = 'Web Order History';
+                document.getElementById('addSaleBtn').style.display = 'none';
+            } else {
+                document.querySelector('.page-title').textContent = 'POS Transactions';
+            }
+
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php?limit=500';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    sales = (result.data.data || []).filter(s => s.payment_status !== 'returned');
+                    applyFilters();
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        async function loadProducts() {
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/products.php?limit=1000';
+                const response = await fetch(basePath);
+                const result = await response.json();
+                if (result.success) {
+                    products = result.data.data || [];
+                }
+            } catch (error) { console.error(error); }
+        }
+
+        let selectedProduct = null;
+        document.getElementById('productSearchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const results = document.getElementById('productSearchResults');
+            
+            if (query.length < 3) {
+                results.style.display = 'none';
+                return;
+            }
+
+            const filtered = products.filter(p => p.product_name.toLowerCase().includes(query) || (p.sku && p.sku.toLowerCase().includes(query)));
+            
+            if (filtered.length === 0) {
+                results.innerHTML = '<div style="padding: 10px; color: #64748b;">No products found</div>';
+            } else {
+                results.innerHTML = filtered.map(p => `
+                    <div class="search-item" data-id="${p.product_id}" 
+                         style="padding: 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;"
+                         onmouseover="this.style.background='#f8fafc'"
+                         onmouseout="this.style.background='white'"
+                         onclick="selectProduct(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+                        <div style="font-weight: 600; color: #1e293b;">${p.product_name}</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-top: 4px;">
+                            <span>SKU: ${p.sku || 'N/A'}</span>
+                            <span style="color: #2563eb; font-weight: 600;">₦${Utils.formatCurrency(p.selling_price).replace('₦', '')}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            results.style.display = 'block';
+        });
+
+        function selectProduct(p) {
+            selectedProduct = p;
+            document.getElementById('productSearchInput').value = p.product_name;
+            document.getElementById('product_id_hidden').value = p.product_id;
+            document.getElementById('priceInput').value = p.selling_price;
+            document.getElementById('productSearchResults').style.display = 'none';
+            updateModalTotal();
+        }
+
+        // Close search results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!document.getElementById('productSearchInput').contains(e.target)) {
+                document.getElementById('productSearchResults').style.display = 'none';
+            }
+        });
+
+        function updateModalTotal() {
+            let total = 0;
+            
+            // Fixed items in cart
+            currentCart.forEach(item => {
+                total += (item.quantity_sold * item.unit_price);
+            });
+
+            // Pending item (if any)
+            if (selectedProduct) {
+                const qty = parseInt(document.getElementById('qtyInput').value) || 0;
+                const price = parseFloat(document.getElementById('priceInput').value) || 0;
+                total += (qty * price);
+            }
+
+            document.getElementById('modalTotal').textContent = Utils.formatCurrency(total);
+        }
+
+        function renderSales(data) {
+            const tbody = document.getElementById('salesBody');
+            if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No transactions found</td></tr>'; return; }
+            tbody.innerHTML = data.map(s => `
+                <tr class="${s.payment_status === 'pending' ? 'unpaid-row' : (s.payment_status === 'returned' ? 'returned-row' : '')}">
+                    <td><code>${s.invoice_number}</code></td>
+                    <td>${new Date(s.sale_date).toLocaleDateString()}<br><small class="text-muted">${s.sale_time || ''}</small></td>
+                    <td>${s.product_name}<br><small class="text-muted">S/N: ${s.serial_number || '-'}</small></td>
+                    <td>${s.quantity_sold}</td>
+                    <td><strong>${Utils.formatCurrency(s.line_total)}</strong></td>
+                    <td>
+                        <span class="badge ${s.payment_status === 'completed' ? 'badge-success' : (s.payment_status === 'returned' ? 'badge-warning' : 'badge-danger')}">
+                            ${s.payment_status === 'completed' ? 'Paid' : (s.payment_status === 'returned' ? 'Returned' : 'Unpaid')}
+                        </span>
+                        <br><small class="text-muted">${s.payment_method}</small>
+                    </td>
+                    <td>${s.customer_name || 'Walk-in'}<br><small class="text-muted">${s.customer_phone || ''}</small></td>
+                    <td><small style="color:var(--text-muted);">${s.notes || '-'}</small></td>
+                    <td>
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-secondary" onclick="printReceipt('${s.invoice_number}')" title="Receipt">📄</button>
+                            ${(s.payment_status === 'pending') 
+                                ? `<button class="btn btn-sm btn-success" onclick="markAsPaid(${s.transaction_id})" title="Mark as Paid">✅ Paid</button>
+                                   <button class="btn btn-sm btn-danger" onclick="returnSale(${s.transaction_id}, true)" title="Return & Cancel Transaction">🗑️ Return</button>` 
+                                : (s.payment_status === 'completed' 
+                                    ? `<button class="btn btn-sm btn-warning" onclick="returnSale(${s.transaction_id}, false)" title="Mark as Returned">🔄 Return</button>`
+                                    : '')}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function markAsPaid(id) {
+            if (!confirm('Confirm this debt has been cleared and payment received?')) return;
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php';
+                const response = await fetch(basePath, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ transaction_id: id, status: 'completed' })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    if (typeof Utils !== 'undefined' && Utils.showSuccess) {
+                        Utils.showSuccess('Payment status updated successfully');
+                    } else {
+                        alert('Payment status updated successfully');
+                    }
+                    await loadSales();
+                } else { alert(result.message); }
+            } catch (error) { console.error(error); }
+        }
+
+        async function returnSale(id, isVoid = false) {
+            const msg = isVoid 
+                ? 'This will DELETE the transaction and return items to stock. Use this for incorrect/cancelled sales. Continue?'
+                : 'Mark this item as Returned? (Items will be added back to inventory)';
+                
+            if (!confirm(msg)) return;
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php';
+                const options = {
+                    method: isVoid ? 'DELETE' : 'PUT',
+                    headers: { 'Content-Type': 'application/json' }
+                };
+                
+                if (isVoid) {
+                    options.body = JSON.stringify({ transaction_id: id });
+                } else {
+                    options.body = JSON.stringify({ transaction_id: id, status: 'returned' });
+                }
+
+                const response = await fetch(basePath, options);
+                const result = await response.json();
+                if (result.success) {
+                    Utils.showSuccess ? Utils.showSuccess(result.message) : alert(result.message);
+                    await loadSales();
+                } else { alert(result.message); }
+            } catch (error) { console.error(error); }
+        }
+
+        async function saveSale(action = 'print') {
+            const form = document.getElementById('saleForm');
+            
+            // Make sure we include current pending selection if it's not empty and cart is empty
+            if (selectedProduct && currentCart.length === 0) {
+                addToCart();
+            }
+
+            if (currentCart.length === 0) {
+                alert('Please add at least one item to the sale');
+                return;
+            }
+
+            const data = {
+                items: currentCart,
+                payment_method: form.payment_method.value,
+                payment_status: form.payment_status.value,
+                customer_name: form.customer_name.value,
+                customer_phone: form.customer_phone.value,
+                notes: form.notes.value
+            };
+
+            try {
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + '/api/sales.php';
+                const response = await fetch(basePath, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.error('Raw response:', text);
+                    throw new Error('Server returned an invalid response. Please check if the database is properly configured.');
+                }
+
+                if (result.success) {
+                    document.getElementById('saleModal').classList.remove('show');
+                    await loadSales();
+                    if (action === 'share') {
+                        printReceipt(result.data.invoice_number, true);
+                    } else if (action === 'print') {
+                        printReceipt(result.data.invoice_number, false);
+                    } else if (action === 'none') {
+                        Utils.showSuccess ? Utils.showSuccess('Sale recorded successfully') : alert('Sale recorded successfully');
+                    }
+                } else { alert(result.message || 'Error recording sale'); }
+            } catch (error) { alert('Error: ' + error.message); }
+        }
+
+        async function printReceipt(invoiceNumber, autoShare = false) {
+            try {
+                // Fetch all items for this invoice from the API to be sure we have everything
+                const pathname = window.location.pathname;
+                const basePath = pathname.replace(/\/[^/]+\.html$/, '') + `/api/sales.php?invoice=${invoiceNumber}`;
+                const response = await fetch(basePath);
+                const result = await response.json();
+                
+                if (!result.success || !result.data.data.length) {
+                    alert('Could not find transaction details for this invoice.');
+                    return;
+                }
+
+                const allSales = result.data.data;
+                const firstItem = allSales[0];
+                const saleDate = new Date(firstItem.sale_date).toLocaleDateString();
+                
+                let totalAmountVal = 0;
+                let itemsHtml = '';
+                let shareText = `*SALES RECEIPT: ${invoiceNumber}*\n--------------------------\n`;
+
+                allSales.forEach(item => {
+                    const subtotal = item.quantity_sold * item.unit_price;
+                    totalAmountVal += subtotal;
+                    
+                    itemsHtml += `
+                        <div class="item-row">
+                            <span><strong>Item:</strong> ${item.product_name}</span>
+                        </div>
+                        <div class="item-row">
+                            <span>Qty: ${item.quantity_sold} x ${Utils.formatCurrency(item.unit_price)}</span>
+                            <span>${Utils.formatCurrency(subtotal)}</span>
+                        </div>
+                        ${item.serial_number || item.vin ? `
+                        <div class="id-section" style="margin-bottom: 8px; border-bottom: 1px dotted #ccc; padding-bottom: 4px;">
+                            ${item.serial_number ? '<div>S/N: ' + item.serial_number + '</div>' : ''}
+                            ${item.vin ? '<div>VIN: ' + item.vin + '</div>' : ''}
+                        </div>
+                        ` : '<div style="margin-bottom: 8px; border-bottom: 1px dotted #ccc;"></div>'}
+                    `;
+
+                    shareText += `*Item:* ${item.product_name}\n*Qty:* ${item.quantity_sold}\n*Price:* ${Utils.formatCurrency(item.unit_price)}\n`;
+                    if (item.serial_number) shareText += `*S/N:* ${item.serial_number}\n`;
+                    if (item.vin) shareText += `*VIN:* ${item.vin}\n`;
+                    shareText += `--------------------------\n`;
+                });
+
+                const totalAmountStr = Utils.formatCurrency(totalAmountVal);
+                shareText += `*GRAND TOTAL: ${totalAmountStr}*\n*Date:* ${saleDate}\n--------------------------\nThank you for your patronage!`;
+                
+                const phone = firstItem.customer_phone ? firstItem.customer_phone.replace(/\D/g, '') : '';
+                const whatsappUrl = phone 
+                    ? `whatsapp://send?phone=${phone}&text=${encodeURIComponent(shareText)}`
+                    : `whatsapp://send?text=${encodeURIComponent(shareText)}`;
+
+                if (autoShare) {
+                    window.location.href = whatsappUrl;
+                    return;
+                }
+
+                const receiptHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Receipt - ${invoiceNumber}</title>
+                        <style>
+                            body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0 auto; padding: 10px; font-size: 12px; }
+                            .text-center { text-align: center; }
+                            .header { margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+                            .logo { font-size: 18px; font-weight: bold; }
+                            .item-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+                            .total-row { border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; }
+                            .footer { margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px; font-size: 10px; }
+                            .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+                            .btn { padding: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; text-decoration: none; display: block; font-size: 14px; }
+                            .btn-print { background: #1e40af; }
+                            .btn-whatsapp { background: #16a34a; }
+                            .id-section { margin: 2px 0 5px 0; font-size: 10px; font-style: italic; }
+                            @media print { .no-print { display: none; } }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header text-center">
+                            <div class="logo">SHERIFF SHEVVY ENTERPRISES</div>
+                            <div style="font-size: 10px; margin-bottom: 5px;">Lalubu Street, Oke-Ilewo, Ibara, Abeokuta, Ogun State, Nigeria</div>
+                            <div>Phone: +234 803 248 8020</div>
+                            <div style="font-size: 11px;">Email: akintundesheriff09@gmail.com</div>
+                            <br>
+                            <div><strong>SALES RECEIPT</strong></div>
+                            <div>#${invoiceNumber}</div>
+                            <div>Date: ${saleDate} ${firstItem.sale_time || ''}</div>
+                        </div>
+                        <div class="details">
+                            ${itemsHtml}
+                        </div>
+                        
+                        <div class="total-row"><span>TOTAL AMOUNT</span><span>${totalAmountStr}</span></div>
+                        <div style="margin-top: 10px;">
+                            <div>Payment: ${firstItem.payment_method.toUpperCase()}</div>
+                            <div>Customer: ${firstItem.customer_name || 'Walk-in'}</div>
+                            ${firstItem.customer_phone ? '<div>Phone: ' + firstItem.customer_phone + '</div>' : ''}
+                        </div>
+                        <div class="footer text-center">
+                            <div style="margin-bottom: 10px; font-weight: bold; border-top: 1px dashed #000; padding-top: 10px; font-size: 10px;">
+                                NOTICE: Goods bought in good condition are not returnable.
+                            </div>
+                            <div>Thank you for your patronage!</div>
+                            <div class="btn-group no-print">
+                                <button onclick="window.print()" class="btn btn-print">🖨️ Print Receipt / PDF</button>
+                                <a href="${whatsappUrl}" class="btn btn-whatsapp">📱 Send to WhatsApp</a>
+                            </div>
+                            <br>
+                            <div><em>SHERIFF SHEVVY ENTERPRISES</em></div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                const printWin = window.open('', '_blank', 'width=400,height=600');
+                if (printWin) {
+                    printWin.document.write(receiptHtml);
+                    printWin.document.close();
+                } else {
+                    alert('Receipt window was blocked by your browser. Please allow popups for this site.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Error generating receipt');
+            }
+        }
+    </script>
+</body>
+</html>
